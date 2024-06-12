@@ -102,7 +102,7 @@ class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
 
         tBoundary = (0., self.T_)
 
-        odeResult = solve_ivp(self.flow__, tBoundary, x, method='RK45')
+        odeResult = solve_ivp(self.flow__, tBoundary, x, method='LSODA')
 
         if (odeResult.status != 0):
 

@@ -8,11 +8,9 @@ from parameter.vector import ParameterVector
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[1.2, 0.1],
+    [[1.2, -0.3],
      [-0.3, 0.4]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
-
-mesh = np.linspace(-8., 8., 1000, endpoint=True)
 
 proposalVariance = 0.25
 mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)

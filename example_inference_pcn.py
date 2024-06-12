@@ -47,13 +47,13 @@ mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
 # run mcmc
 nSteps = 1000
-initState = setup.LotkaVolterraParameter(np.zeros(2))
+initState = setup.LotkaVolterraParameter.from_interpolation(np.ones(2))
 mcmc.run(nSteps, initState)
 
 states = mcmc.chain
 
-burnIn = int(0.1 * nSteps)
-thinningStep = 6
+burnIn = 100
+thinningStep = 4
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter(np.mean(states, axis=0))
