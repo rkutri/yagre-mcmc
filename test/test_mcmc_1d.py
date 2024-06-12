@@ -39,7 +39,8 @@ meanState = np.mean(states)
 sampleVar = np.var(mcmcSamples)
 stateVar = np.var(states)
 
-def test_moment():
+
+def test_moments():
 
     MTOL = 1e-1
     VTOL = 1e-1
