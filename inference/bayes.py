@@ -1,9 +1,9 @@
 from numpy import exp
-from inference.interface import BayesianModel
+from inference.interface import BayesianModelInterface
 from inference.likelihood import BayesianRegressionLikelihood
 
 
-class BayesianRegressionModel(BayesianModel):
+class BayesianRegressionModel(BayesianModelInterface):
 
     def __init__(self, data, prior, forwardMap, noiseModel):
 
