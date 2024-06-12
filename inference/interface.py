@@ -5,7 +5,8 @@ from parameter.interface import ParameterInterface
 class TargetDensityInterface(ABC):
 
     @abstractmethod
-    def evaluate_ratio(self, state1: ParameterInterface, state2: ParameterInterface) -> float:
+    def evaluate_ratio(self, state1: ParameterInterface,
+                       state2: ParameterInterface) -> float:
         pass
 
 
@@ -35,7 +36,7 @@ class ForwardMapInterface(ABC):
         pass
 
 
-class BayesianModel(ABC):
+class BayesianModelInterface(ABC):
 
     @abstractmethod
     def log_prior(self, parameter: ParameterInterface) -> float:
