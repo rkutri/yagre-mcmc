@@ -6,12 +6,11 @@ class ScalarParameter(ParameterInterface):
     def __init__(self, coefficient):
 
         if (isinstance(coefficient, float)):
-            raise Exception("scalar parameters must be 1-dimensional array " 
-                             + "types")
+            raise Exception("scalar parameters must be 1-dimensional array "
+                            + "types")
 
         self.coefficient_ = coefficient
         self.coeffType_ = type(coefficient)
-
 
     @classmethod
     def from_interpolation(cls, value):

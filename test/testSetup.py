@@ -123,6 +123,6 @@ def generate_synthetic_data(fwdMap, design, noiseVar):
     sig = sqrt(noiseVar)
 
     measurement = [fwdMap.evaluate(x) + sig * standard_normal(paramDim)
-                  for x in design]
+                   for x in design]
 
     return BayesianRegressionData(design, measurement)
