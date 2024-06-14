@@ -22,6 +22,7 @@ class ParameterLawInterface(ABC):
 
 
 class ForwardMapInterface(ABC):
+    # TODO: make this adhere to a proxy pattern
 
     @abstractproperty
     def parameter(self):

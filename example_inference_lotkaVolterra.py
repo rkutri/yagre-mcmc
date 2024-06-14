@@ -8,23 +8,26 @@ from inference.parameterLaw import IIDGaussian
 from inference.noise import CentredGaussianIIDNoise
 from inference.bayes import BayesianRegressionModel
 from inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 
+# current options are 'mrw', 'pcn'
+mcmcMethod = 'pcn'
 
 # define problem parameters
 groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
 alpha = 0.8
 gamma = 0.4
-T = 5.
+T = 10.
 
 # define forward map
 fwdMap = setup.LotkaVolterraForwardMap(groundTruth, T, alpha, gamma)
 
 # generate the data
-dataSize = 8
+dataSize = 10
 design = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
 
-dataNoiseVariance = 0.05
+dataNoiseVariance = 0.04
 data = setup.generate_synthetic_data(fwdMap, design, dataNoiseVariance)
 
 print("synthetic data generated")
@@ -41,18 +44,32 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdMap, noiseModel)
 
-# setup mrw
-proposalVariance = 0.02
-mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
+if (mcmcMethod == 'mrw'):
+
+    proposalVariance = 0.02
+    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
+
+elif (mcmcMethod == 'pcn'):
+
+    if (not np.allclose(priorMean.evaluate(), np.zeros(2))):
+
+        priorMean = setup.LotkaVolterraParameter(np.zeros(2))
+        prior = IIDGaussian(priorMean, priorVariance)
+
+    stepSize = 0.02
+    mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
+
+else:
+    raise Exception("Unknown MCMC method " + str(mcmcMethod))
 
 # run mcmc
 nSteps = 1000
-initState = setup.LotkaVolterraParameter(np.array([1.5, 1.8]))
+initState = setup.LotkaVolterraParameter(np.zeros(2))
 mcmc.run(nSteps, initState)
 
 states = mcmc.chain
 
-burnIn = 400
+burnIn = 100
 thinningStep = 3
 
 mcmcSamples = states[burnIn::thinningStep]
@@ -74,7 +91,6 @@ chainY = [state[1] for state in states]
 
 mcmcX = [sample[0] for sample in mcmcSamples]
 mcmcY = [sample[1] for sample in mcmcSamples]
-
 
 # Plot the Markov chain trajectory
 ax[0].plot(chainX[:burnIn], chainY[:burnIn], color='gray', alpha=0.4,

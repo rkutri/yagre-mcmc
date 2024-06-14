@@ -24,7 +24,10 @@ class PreconditionedCrankNicolson(MetropolisHastings):
         assert 0 < stepSize and stepSize <= 0.5
 
         priorMeanVec = prior.mean.coefficient
-        assert allclose(priorMeanVec, zeros_like(priorMeanVec))
+        if (not allclose(priorMeanVec, zeros_like(priorMeanVec))):
+            raise ValueError("Preconditioned Crank Nicholson requires "
+                + "centred prior")
+
 
         self.proposalLaw_ = prior
         self.stepSize_ = stepSize
