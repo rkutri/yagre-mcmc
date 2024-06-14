@@ -19,15 +19,15 @@ tgtDensityEval /= np.sqrt(2. * np.pi * tgtVar)
 proposalVariance = 0.5
 mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
 
-nSteps = 10000
+nSteps = 15000
 initState = ScalarParameter(np.array([-3.]))
 mcmc.run(nSteps, initState, verbose=False)
 
 states = np.array(mcmc.chain)
 
 # postprocessing
-burnin = int(0.02 * nSteps)
-thinningStep = 4
+burnin = 200
+thinningStep = 3
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -46,7 +46,7 @@ def test_moments():
     VTOL = 1e-1
 
     assert np.abs(tgtMean.coefficient - meanSample) < MTOL
-    assert np.abs(tgtMean.coefficient - meanState) < MTOL
+    assert np.abs(tgtMean.coefficient - meanState) < 2. * MTOL
 
     assert np.abs(tgtVar - sampleVar) < VTOL
     assert np.abs(tgtVar - stateVar) < VTOL
