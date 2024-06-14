@@ -26,6 +26,7 @@ thinningStep = 4
 
 mcmcSamples = states[burnin::thinningStep]
 
+
 def test_moments():
 
     meanState = np.mean(states, axis=0)
@@ -37,9 +38,8 @@ def test_moments():
     MTOL = 2e-1
     CTOL = 4e-1
 
-    assert np.allclose(meanState, tgtMean.vector, atol=MTOL)
-    assert np.allclose(meanEst, tgtMean.vector, atol=MTOL)
+    assert np.allclose(meanState, tgtMean.coefficient, atol=MTOL)
+    assert np.allclose(meanEst, tgtMean.coefficient, atol=MTOL)
 
     assert np.allclose(sampleCov, tgtCov, atol=CTOL)
-    assert np.allclose(stateCov, tgtCov, atol=2.*CTOL)
-
+    assert np.allclose(stateCov, tgtCov, atol=2. * CTOL)

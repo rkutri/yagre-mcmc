@@ -18,24 +18,28 @@ class GaussianTargetDensity1d(ifc.TargetDensityInterface):
 
     def evaluate_ratio(self, num, denom):
 
-        return exp(0.5 / self.var_ * (square(self.mean_.vector - denom.vector)
-                                      - square(self.mean_.vector - num.vector)))
+        return exp(0.5 /
+                   self.var_ *
+                   (square(self.mean_.coefficient -
+                           denom.coefficient) -
+                    square(self.mean_.coefficient -
+                           num.coefficient)))
 
     def evaluate_on_mesh(self, mesh):
 
-        return exp(-0.5 * square((self.mean_.vector - mesh) / self.var_))
+        return exp(-0.5 * square((self.mean_.coefficient - mesh) / self.var_))
 
 
 class GaussianTargetDensity2d(ifc.TargetDensityInterface):
 
     def __init__(self, mean, cov):
 
-        self.dist_ = multivariate_normal(mean.vector, cov)
+        self.dist_ = multivariate_normal(mean.coefficient, cov)
 
     def evaluate_ratio(self, pNum, pDenom):
 
-        return exp(self.dist_.logpdf(pNum.vector)
-                   - self.dist_.logpdf(pDenom.vector))
+        return exp(self.dist_.logpdf(pNum.coefficient)
+                   - self.dist_.logpdf(pDenom.coefficient))
 
     def evaluate_on_mesh(self, mesh):
 
@@ -49,14 +53,14 @@ class LotkaVolterraParameter(ParameterVector):
         return cls(log(value))
 
     def evaluate(self):
-        return exp(self.vector_)
+        return exp(self.coefficient_)
 
 
 class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
     """
     Two-dimensional Lotka-Volterra model with fixed parameters alpha and
     gamma and unknown interaction rates beta and delta (notation from Wiki).
-    Measurement data is the vector of the solution at final time T
+    Measurement data is the coefficient of the solution at final time T
     """
 
     def __init__(self, initialParameter, T, alpha, gamma):
@@ -88,7 +92,7 @@ class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
 
         tBoundary = (0., self.T_)
 
-        odeResult = solve_ivp(self.flow__, tBoundary, x, method='RK45')
+        odeResult = solve_ivp(self.flow__, tBoundary, x, method='LSODA')
 
         if (odeResult.status != 0):
 
@@ -102,7 +106,7 @@ class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
 
         tBoundary = (0., self.T_)
 
-        odeResult = solve_ivp(self.flow__, tBoundary, x, method='RK45')
+        odeResult = solve_ivp(self.flow__, tBoundary, x, method='LSODA')
 
         if (odeResult.status != 0):
 

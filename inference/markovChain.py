@@ -43,7 +43,7 @@ class MetropolisHastings(ABC):
 
         state = initialState
 
-        self.chain_ = [state.vector]
+        self.chain_ = [state.coefficient]
 
         for n in range(nSteps-1):
 
@@ -58,6 +58,6 @@ class MetropolisHastings(ABC):
 
             state = self.accept_reject__(proposal, state)
 
-            self.chain_.append(state.vector)
+            self.chain_.append(state.coefficient)
 
         return

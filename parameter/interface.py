@@ -12,11 +12,11 @@ class ParameterInterface(ABC):
         pass
 
     @abstractproperty
-    def vector_type(self):
+    def coefficient_type(self):
         pass
 
     @abstractproperty
-    def vector(self):
+    def coefficient(self):
         pass
 
     @abstractmethod

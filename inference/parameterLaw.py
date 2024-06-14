@@ -19,16 +19,13 @@ class IIDGaussian(ParameterLawInterface):
         self.mean_ = mean
         self.variance_ = variance
 
-        self.paramType_ = type(mean)
-        self.paramVectorType_ = mean.vector_type
-
     @property
     def mean(self):
         return self.mean_
 
     def evaluate_log_density(self, state):
 
-        x = state.vector - self.mean_.vector
+        x = state.coefficient - self.mean_.coefficient
 
         return -0.5 * np.dot(x, x) / self.variance_
 
@@ -36,7 +33,9 @@ class IIDGaussian(ParameterLawInterface):
 
         xiVal = standard_normal(self.mean_.dimension)
 
-        return self.paramType_(self.mean_.vector + sqrt(self.variance_) * xiVal)
+        ParamType = type(self.mean_)
+
+        return ParamType(self.mean_.coefficient + sqrt(self.variance_) * xiVal)
 
 
 class Uniform(ParameterLawInterface):
@@ -46,21 +45,21 @@ class Uniform(ParameterLawInterface):
         assert isinstance(high, type(low))
 
         self.paramType_ = type(low)
-        self.paramValueType_ = low.vector_type
+        self.paramValueType_ = low.coefficient_type
 
         self.low_ = low
         self.high_ = high
 
     def evaluate_density(self, state):
 
-        x0 = state.vector[0]
-        x1 = state.vector[1]
+        x0 = state.coefficient[0]
+        x1 = state.coefficient[1]
 
-        lo0 = self.low_.vector[0]
-        lo1 = self.low_.vector[1]
+        lo0 = self.low_.coefficient[0]
+        lo1 = self.low_.coefficient[1]
 
-        hi0 = self.high_.vector[0]
-        hi1 = self.high_.vector[1]
+        hi0 = self.high_.coefficient[0]
+        hi1 = self.high_.coefficient[1]
 
         d = state.dimension
 
@@ -71,7 +70,7 @@ class Uniform(ParameterLawInterface):
                 pdf = 1.
 
                 for i in range(d):
-                    pdf /= self.high_.vector[i] - self.low_.vector[i]
+                    pdf /= self.high_.coefficient[i] - self.low_.coefficient[i]
 
                 return pdf
 
@@ -82,11 +81,11 @@ class Uniform(ParameterLawInterface):
 
     def generate_realisation(self):
 
-        low0 = self.low_.vector[0]
-        low1 = self.low_.vector[1]
+        low0 = self.low_.coefficient[0]
+        low1 = self.low_.coefficient[1]
 
-        high0 = self.high_.vector[0]
-        high1 = self.high_.vector[1]
+        high0 = self.high_.coefficient[0]
+        high1 = self.high_.coefficient[1]
 
         rvVal = self.paramValueType()
 

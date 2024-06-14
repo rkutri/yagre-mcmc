@@ -3,14 +3,14 @@ from parameter.interface import ParameterInterface
 
 class ScalarParameter(ParameterInterface):
 
-    def __init__(self, vector):
+    def __init__(self, coefficient):
 
-        if (isinstance(vector, float)):
+        if (isinstance(coefficient, float)):
             raise Exception("scalar parameters must be 1-dimensional array " 
                              + "types")
 
-        self.vector_ = vector
-        self.vectorType_ = type(vector)
+        self.coefficient_ = coefficient
+        self.coeffType_ = type(coefficient)
 
 
     @classmethod
@@ -22,12 +22,12 @@ class ScalarParameter(ParameterInterface):
         return 1
 
     @property
-    def vector_type(self):
-        return self.vectorType_
+    def coefficient_type(self):
+        return self.coeffType_
 
     @property
-    def vector(self):
-        return self.vector_
+    def coefficient(self):
+        return self.coefficient_
 
     def evaluate(self):
-        return self.vector_
+        return self.coefficient_

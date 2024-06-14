@@ -3,12 +3,12 @@ from parameter.interface import ParameterInterface
 
 class ParameterVector(ParameterInterface):
 
-    def __init__(self, vectorArray):
+    def __init__(self, coefficient):
 
-        self.vector_ = vectorArray
+        self.coefficient_ = coefficient
 
-        self.dim_ = vectorArray.size
-        self.vectorType_ = type(vectorArray)
+        self.dim_ = coefficient.size
+        self.coefficientType_ = type(coefficient)
 
     @classmethod
     def from_interpolation(cls, value):
@@ -19,12 +19,12 @@ class ParameterVector(ParameterInterface):
         return self.dim_
 
     @property
-    def vector_type(self):
-        return self.vectorType_
+    def coefficient_type(self):
+        return self.coeffType_
 
     @property
-    def vector(self):
-        return self.vector_
+    def coefficient(self):
+        return self.coefficient_
 
     def evaluate(self):
-        return self.vector_
+        return self.coefficient_

@@ -45,9 +45,8 @@ def test_moments():
     MTOL = 1e-1
     VTOL = 1e-1
 
-    assert np.abs(tgtMean.vector - meanSample) < MTOL
-    assert np.abs(tgtMean.vector - meanState) < MTOL
+    assert np.abs(tgtMean.coefficient - meanSample) < MTOL
+    assert np.abs(tgtMean.coefficient - meanState) < MTOL
 
     assert np.abs(tgtVar - sampleVar) < VTOL
     assert np.abs(tgtVar - stateVar) < VTOL
-

@@ -29,7 +29,7 @@ data = setup.generate_synthetic_data(fwdMap, inputData, dataNoiseVariance)
 
 print("synthetic data generated")
 
-# start with a prior centred around the true parameter vector
+# start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter(np.zeros(2))
 priorVariance = 2.
 prior = IIDGaussian(priorMean, priorVariance)
@@ -42,17 +42,17 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 statModel = BayesianRegressionModel(data, prior, fwdMap, noiseModel)
 
 # setup mrw
-proposalVariance = 0.01
+proposalVariance = 0.02
 mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
 
 # run mcmc
 nSteps = 1000
-initState = setup.LotkaVolterraParameter.from_interpolation(np.ones(2))
+initState = setup.LotkaVolterraParameter(np.array([1.5, 1.8]))
 mcmc.run(nSteps, initState)
 
 states = mcmc.chain
 
-burnIn = int(0.1 * nSteps)
+burnIn = 100
 thinningStep = 4
 
 mcmcSamples = states[burnIn::thinningStep]
@@ -83,12 +83,27 @@ ax[0].scatter(chainX, chainY, color='red', marker='o', alpha=0.1, s=80,
               label='mc states')
 ax[0].scatter(mcmcX, mcmcY, color='blue', marker='o', s=80,
               alpha=0.6, label='selected samples')
-ax[0].scatter(posteriorMean.vector[0], posteriorMean.vector[1], color='green',
-              marker='P', label='posterior mean', s=120)
-ax[0].scatter(meanState.vector[0], meanState.vector[1], color='black',
-              marker='P', label='markov chain mean', s=120)
-ax[0].scatter(groundTruth.vector[0], groundTruth.vector[1], color='red',
-              marker='P', label='true parameter', s=120)
+ax[0].scatter(
+    posteriorMean.coefficient[0],
+    posteriorMean.coefficient[1],
+    color='green',
+    marker='P',
+    label='posterior mean',
+    s=120)
+ax[0].scatter(
+    meanState.coefficient[0],
+    meanState.coefficient[1],
+    color='black',
+    marker='P',
+    label='markov chain mean',
+    s=120)
+ax[0].scatter(
+    groundTruth.coefficient[0],
+    groundTruth.coefficient[1],
+    color='red',
+    marker='P',
+    label='true parameter',
+    s=120)
 
 ax[0].set_title('2D Markov Chain Path')
 ax[0].set_xlabel('X')

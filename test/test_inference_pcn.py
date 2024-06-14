@@ -63,5 +63,5 @@ def test_mean():
 
     MTOL = 1e-1
 
-    np.allclose(posteriorMean.vector, groundTruth.vector, atol=MTOL)
-    np.allclose(meanState.vector, groundTruth.vector, atol=2.*MTOL)
+    np.allclose(posteriorMean.coefficient, groundTruth.coefficient, atol=MTOL)
+    np.allclose(meanState.coefficient, groundTruth.coefficient, atol=2. * MTOL)

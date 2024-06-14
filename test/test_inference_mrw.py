@@ -28,7 +28,7 @@ data = setup.generate_synthetic_data(fwdMap, inputData, dataNoiseVariance)
 
 print("synthetic data generated")
 
-# start with a prior centred around the true parameter vector
+# start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter(np.zeros(2))
 priorVariance = 2.
 prior = IIDGaussian(priorMean, priorVariance)
@@ -63,6 +63,5 @@ def test_mean():
 
     MTOL = 1e-1
 
-    np.allclose(posteriorMean.vector, groundTruth.vector, atol=MTOL)
-    np.allclose(meanState.vector, groundTruth.vector, atol=2.*MTOL)
-
+    np.allclose(posteriorMean.coefficient, groundTruth.coefficient, atol=MTOL)
+    np.allclose(meanState.coefficient, groundTruth.coefficient, atol=2. * MTOL)

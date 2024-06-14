@@ -10,7 +10,7 @@ tgtMean = ScalarParameter(np.array([1.5]))
 tgtVar = 1.
 tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
-mesh = np.linspace(-4., 4., 200, endpoint=True)
+mesh = np.linspace(-5., 5., 200, endpoint=True)
 
 # evaluate target density and normalise
 tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
@@ -36,7 +36,7 @@ mcmcSamples = states[burnin::thinningStep]
 meanSample = np.mean(mcmcSamples)
 meanState = np.mean(states)
 
-print("true mean: " + str(tgtMean.vector[0]))
+print("true mean: " + str(tgtMean.coefficient[0]))
 print("best estimate: " + str(meanSample))
 print("unprocessed estimate: " + str(meanState))
 

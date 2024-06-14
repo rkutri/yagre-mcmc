@@ -31,7 +31,7 @@ mcmcSamples = states[burnin::thinningStep]
 meanState = np.mean(states, axis=0)
 meanEst = np.mean(mcmcSamples, axis=0)
 
-print("true mean: " + str(tgtMean.vector))
+print("true mean: " + str(tgtMean.coefficient))
 print("mean state: " + str(meanState))
 print("mean estimate: " + str(meanEst))
 
