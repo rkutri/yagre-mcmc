@@ -1,4 +1,4 @@
-import exampleSetup as setup
+import test.testSetup as setup
 
 import numpy as np
 import matplotlib.pyplot as plt

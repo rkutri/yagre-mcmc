@@ -23,7 +23,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
         assert 0 < stepSize and stepSize <= 0.5
 
-        priorMeanVec = prior.mean.vector
+        priorMeanVec = prior.mean.coefficient
         assert allclose(priorMeanVec, zeros_like(priorMeanVec))
 
         self.proposalLaw_ = prior
@@ -40,7 +40,13 @@ class PreconditionedCrankNicolson(MetropolisHastings):
         ParamType = type(state)
 
         t = 2. * self.stepSize_
-        return ParamType(sqrt(1. - t) * state.vector + sqrt(t) * xi.vector)
+        return ParamType(
+            sqrt(
+                1. -
+                t) *
+            state.coefficient +
+            sqrt(t) *
+            xi.coefficient)
 
     def acceptance_probability__(self, proposal, state):
 

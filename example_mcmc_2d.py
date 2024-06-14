@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from exampleSetup import GaussianTargetDensity2d
+from test.testSetup import GaussianTargetDensity2d
 from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from parameter.vector import ParameterVector
 

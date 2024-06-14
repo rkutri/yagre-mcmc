@@ -18,8 +18,8 @@ class BayesianRegressionLikelihood(LikelihoodInterface):
 
         for i in range(self.data_.size):
 
-            dataMisfit = self.forwardMap_.evaluate(self.data_.input[i])
-            dataMisfit -= self.data_.output[i]
+            dataMisfit = self.forwardMap_.evaluate(self.data_.design[i])
+            dataMisfit -= self.data_.measurement[i]
 
             li = -0.5 * self.noiseModel_.induced_norm_squared(dataMisfit)
 

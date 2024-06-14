@@ -5,7 +5,7 @@ from numpy import exp, log, square, sqrt
 from numpy.random import standard_normal
 from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
-from inference.data import InputOutputData
+from inference.data import BayesianRegressionData
 from parameter.vector import ParameterVector
 
 
@@ -117,12 +117,12 @@ class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
         return (odeResult.t, odeResult.y)
 
 
-def generate_synthetic_data(fwdMap, inputData, noiseVar):
+def generate_synthetic_data(fwdMap, design, noiseVar):
 
     paramDim = fwdMap.parameter.dimension
     sig = sqrt(noiseVar)
 
-    outputData = [fwdMap.evaluate(x0) + sig * standard_normal(paramDim)
-                  for x0 in inputData]
+    measurement = [fwdMap.evaluate(x) + sig * standard_normal(paramDim)
+                  for x in design]
 
-    return InputOutputData(inputData, outputData)
+    return BayesianRegressionData(design, measurement)

@@ -45,7 +45,7 @@ class MetropolisHastings(ABC):
 
         self.chain_ = [state.coefficient]
 
-        for n in range(nSteps-1):
+        for n in range(nSteps - 1):
 
             if (verbose):
                 if (n % 50 == 0):

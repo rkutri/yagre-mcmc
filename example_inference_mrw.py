@@ -1,4 +1,4 @@
-import exampleSetup as setup
+import test.testSetup as setup
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,23 +15,23 @@ groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
 alpha = 0.8
 gamma = 0.4
-T = 15.
+T = 5.
 
 # define forward map
 fwdMap = setup.LotkaVolterraForwardMap(groundTruth, T, alpha, gamma)
 
 # generate the data
-dataSize = 5
-inputData = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
+dataSize = 8
+design = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
 
 dataNoiseVariance = 0.05
-data = setup.generate_synthetic_data(fwdMap, inputData, dataNoiseVariance)
+data = setup.generate_synthetic_data(fwdMap, design, dataNoiseVariance)
 
 print("synthetic data generated")
 
 # start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter(np.zeros(2))
-priorVariance = 2.
+priorVariance = 1.
 prior = IIDGaussian(priorMean, priorVariance)
 
 # define a noise model
@@ -52,8 +52,8 @@ mcmc.run(nSteps, initState)
 
 states = mcmc.chain
 
-burnIn = 100
-thinningStep = 4
+burnIn = 400
+thinningStep = 3
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter(np.mean(states, axis=0))

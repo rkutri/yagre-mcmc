@@ -10,7 +10,7 @@ from parameter.interface import ParameterInterface
 
 class IIDGaussian(ParameterLawInterface):
     """
-    Multivariate Gaussian, where the covariance matrix is diagonal, and 
+    Multivariate Gaussian, where the covariance matrix is diagonal, and
     all the diagonal entries have the same value.
     """
 
@@ -40,7 +40,8 @@ class IIDGaussian(ParameterLawInterface):
 
 class Uniform(ParameterLawInterface):
 
-    def __init__(self, low: ParameterInterface, high: ParameterInterface) -> None:
+    def __init__(self, low: ParameterInterface,
+                 high: ParameterInterface) -> None:
 
         assert isinstance(high, type(low))
 
