@@ -1,15 +1,17 @@
-import inference.interface as ifc
-
 from sys import exit
+
 from numpy import exp, log, square, sqrt
 from numpy.random import standard_normal
 from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
-from inference.data import BayesianRegressionData
+
 from parameter.vector import ParameterVector
+from inference.interface import TargetDensityInterface
+from inference.data import BayesianRegressionData
+from forwardMap.interface import ForwardMapInterface
 
 
-class GaussianTargetDensity1d(ifc.TargetDensityInterface):
+class GaussianTargetDensity1d(TargetDensityInterface):
 
     def __init__(self, mean, var):
 
@@ -30,7 +32,7 @@ class GaussianTargetDensity1d(ifc.TargetDensityInterface):
         return exp(-0.5 * square((self.mean_.coefficient - mesh) / self.var_))
 
 
-class GaussianTargetDensity2d(ifc.TargetDensityInterface):
+class GaussianTargetDensity2d(TargetDensityInterface):
 
     def __init__(self, mean, cov):
 
@@ -60,7 +62,7 @@ class LotkaVolterraParameter(ParameterVector):
         return exp(self.coefficient_)
 
 
-class LotkaVolterraForwardMap(ifc.ForwardMapInterface):
+class LotkaVolterraForwardMap(ForwardMapInterface):
     """
     Two-dimensional Lotka-Volterra model with fixed parameters alpha and
     gamma and unknown interaction rates beta and delta (notation from Wiki).

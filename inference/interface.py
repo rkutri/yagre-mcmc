@@ -21,22 +21,6 @@ class ParameterLawInterface(ABC):
         pass
 
 
-class ForwardMapInterface(ABC):
-    # TODO: make this adhere to a proxy pattern
-
-    @abstractproperty
-    def parameter(self):
-        pass
-
-    @parameter.setter
-    def parameter(self, parameter: ParameterInterface) -> None:
-        pass
-
-    @abstractmethod
-    def evaluate(self, x):
-        pass
-
-
 class BayesianModelInterface(ABC):
 
     @abstractmethod

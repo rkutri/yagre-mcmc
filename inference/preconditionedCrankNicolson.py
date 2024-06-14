@@ -26,8 +26,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
         priorMeanVec = prior.mean.coefficient
         if (not allclose(priorMeanVec, zeros_like(priorMeanVec))):
             raise ValueError("Preconditioned Crank Nicholson requires "
-                + "centred prior")
-
+                             + "centred prior")
 
         self.proposalLaw_ = prior
         self.stepSize_ = stepSize
