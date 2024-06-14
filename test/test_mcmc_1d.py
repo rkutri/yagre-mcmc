@@ -5,7 +5,7 @@ from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from parameter.scalar import ScalarParameter
 
 
-tgtMean = ScalarParameter(np.array([1.5]))
+tgtMean = ScalarParameter.from_coefficient(np.array([1.5]))
 tgtVar = 1.
 tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
@@ -20,7 +20,7 @@ proposalVariance = 0.5
 mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
 
 nSteps = 15000
-initState = ScalarParameter(np.array([-3.]))
+initState = ScalarParameter.from_coefficient(np.array([-3.]))
 mcmc.run(nSteps, initState, verbose=False)
 
 states = np.array(mcmc.chain)

@@ -33,7 +33,7 @@ data = setup.generate_synthetic_data(fwdMap, design, dataNoiseVariance)
 print("synthetic data generated")
 
 # start with a prior centred around the true parameter coefficient
-priorMean = setup.LotkaVolterraParameter(np.zeros(2))
+priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
 priorVariance = 1.
 prior = IIDGaussian(priorMean, priorVariance)
 
@@ -53,7 +53,7 @@ elif (mcmcMethod == 'pcn'):
 
     if (not np.allclose(priorMean.evaluate(), np.zeros(2))):
 
-        priorMean = setup.LotkaVolterraParameter(np.zeros(2))
+        priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
         prior = IIDGaussian(priorMean, priorVariance)
 
     stepSize = 0.02
@@ -64,7 +64,7 @@ else:
 
 # run mcmc
 nSteps = 1000
-initState = setup.LotkaVolterraParameter(np.zeros(2))
+initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
 mcmc.run(nSteps, initState)
 
 states = mcmc.chain
@@ -73,8 +73,10 @@ burnIn = 100
 thinningStep = 3
 
 mcmcSamples = states[burnIn::thinningStep]
-meanState = setup.LotkaVolterraParameter(np.mean(states, axis=0))
-posteriorMean = setup.LotkaVolterraParameter(np.mean(mcmcSamples, axis=0))
+meanState = setup.LotkaVolterraParameter.from_coefficient(
+    np.mean(states, axis=0))
+posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
+    np.mean(mcmcSamples, axis=0))
 
 # estimates mean
 print("true parameter: " + str(groundTruth.evaluate()))

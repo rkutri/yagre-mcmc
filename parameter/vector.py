@@ -11,6 +11,10 @@ class ParameterVector(ParameterInterface):
         self.coefficientType_ = type(coefficient)
 
     @classmethod
+    def from_coefficient(cls, coefficient):
+        return cls(coefficient)
+
+    @classmethod
     def from_interpolation(cls, value):
         return cls(value)
 

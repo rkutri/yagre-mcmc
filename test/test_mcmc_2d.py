@@ -5,7 +5,7 @@ from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from parameter.vector import ParameterVector
 
 
-tgtMean = ParameterVector(np.array([1., 1.5]))
+tgtMean = ParameterVector.from_coefficient(np.array([1., 1.5]))
 tgtCov = np.array(
     [[1.2, -0.2],
      [-0.2, 0.4]])
@@ -15,7 +15,7 @@ proposalVariance = 0.25
 mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
 
 nSteps = 10000
-initState = ParameterVector(np.array([-2., -0.]))
+initState = ParameterVector.from_coefficient(np.array([-2., -0.]))
 mcmc.run(nSteps, initState, verbose=False)
 
 states = np.array(mcmc.chain)

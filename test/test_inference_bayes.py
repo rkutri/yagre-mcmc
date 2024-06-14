@@ -41,7 +41,7 @@ data = setup.generate_synthetic_data(fwdMap, inputData, dataNoiseVariance)
 print("synthetic data generated")
 
 # start with a prior centred around the true parameter coefficient
-priorMean = setup.LotkaVolterraParameter(np.zeros(2))
+priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
 priorVariance = 1.
 prior = IIDGaussian(priorMean, priorVariance)
 
@@ -55,13 +55,13 @@ statModel = BayesianRegressionModel(data, prior, fwdMap, noiseModel)
 
 def test_mrw():
 
-    # setup mrw
     proposalVariance = 0.01
     mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
 
     # run mcmc
     nSteps = 600
-    initState = setup.LotkaVolterraParameter(np.array([-0.6, -0.3]))
+    initState = setup.LotkaVolterraParameter.from_coefficient(
+        np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
     states = mcmc.chain
@@ -70,21 +70,23 @@ def test_mrw():
     thinningStep = 2
 
     mcmcSamples = states[burnIn::thinningStep]
-    meanState = setup.LotkaVolterraParameter(np.mean(states, axis=0))
-    posteriorMean = setup.LotkaVolterraParameter(np.mean(mcmcSamples, axis=0))
+    meanState = setup.LotkaVolterraParameter.from_coefficient(
+        np.mean(states, axis=0))
+    posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
+        np.mean(mcmcSamples, axis=0))
 
     check_mean([meanState, posteriorMean], groundTruth)
 
 
 def test_pcn():
 
-    # setup pcn
     stepSize = 0.001
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
     # run mcmc
     nSteps = 600
-    initState = setup.LotkaVolterraParameter(np.array([-0.6, -0.3]))
+    initState = setup.LotkaVolterraParameter.from_coefficient(
+        np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
     states = mcmc.chain
@@ -93,7 +95,9 @@ def test_pcn():
     thinningStep = 2
 
     mcmcSamples = states[burnIn::thinningStep]
-    meanState = setup.LotkaVolterraParameter(np.mean(states, axis=0))
-    posteriorMean = setup.LotkaVolterraParameter(np.mean(mcmcSamples, axis=0))
+    meanState = setup.LotkaVolterraParameter.from_coefficient(
+        np.mean(states, axis=0))
+    posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
+        np.mean(mcmcSamples, axis=0))
 
     check_mean([meanState, posteriorMean], groundTruth)

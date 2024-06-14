@@ -4,7 +4,11 @@ from abc import ABC, abstractproperty, abstractmethod, abstractclassmethod
 class ParameterInterface(ABC):
 
     @abstractclassmethod
-    def from_interpolation(cls, value):
+    def from_coefficient(cls, coefficient):
+        pass
+
+    @abstractclassmethod
+    def from_interpolation(cls, values):
         pass
 
     @abstractproperty

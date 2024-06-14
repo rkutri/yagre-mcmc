@@ -13,6 +13,10 @@ class ScalarParameter(ParameterInterface):
         self.coeffType_ = type(coefficient)
 
     @classmethod
+    def from_coefficient(cls, coefficient):
+        return cls(coefficient)
+
+    @classmethod
     def from_interpolation(cls, value):
         return cls(value)
 
