@@ -11,5 +11,5 @@ class ForwardMap:
 
     def request_evaluation(self, parameter):
 
-        solverConfig = self.solver_.to_config(parameter)
-        self.result_ = self.solver_.invoke(solverConfig)
+        self.solver_.configure(parameter)
+        self.result_ = self.solver_.invoke()
