@@ -5,7 +5,7 @@ import numpy as np
 from numpy.random import uniform
 from inference.parameterLaw import IIDGaussian
 from inference.noise import CentredGaussianIIDNoise
-from inference.bayes import BayesianRegressionModel
+from inference.bayesModel import BayesianRegressionModel
 from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 

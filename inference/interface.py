@@ -32,21 +32,6 @@ class BayesianModelInterface(ABC):
         pass
 
 
-class DataInterface(ABC):
-
-    @abstractproperty
-    def size(self):
-        pass
-
-    @abstractproperty
-    def input(self):
-        pass
-
-    @abstractproperty
-    def output(self):
-        pass
-
-
 class LikelihoodInterface(ABC):
 
     @abstractmethod

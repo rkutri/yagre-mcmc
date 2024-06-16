@@ -7,8 +7,8 @@ from scipy.integrate import solve_ivp
 
 from parameter.vector import ParameterVector
 from inference.interface import TargetDensityInterface
-from inference.data import BayesianRegressionData
-from forwardMap.interface import ForwardMapInterface
+from inference.data import Data
+from model.interface import ForwardModelInterface
 
 
 class GaussianTargetDensity1d(TargetDensityInterface):
@@ -62,7 +62,7 @@ class LotkaVolterraParameter(ParameterVector):
         return exp(self.coefficient_)
 
 
-class LotkaVolterraForwardMap(ForwardMapInterface):
+class LotkaVolterraForwardModel(ForwardModelInterface):
     """
     Two-dimensional Lotka-Volterra model with fixed parameters alpha and
     gamma and unknown interaction rates beta and delta (notation from Wiki).
@@ -123,12 +123,12 @@ class LotkaVolterraForwardMap(ForwardMapInterface):
         return (odeResult.t, odeResult.y)
 
 
-def generate_synthetic_data(fwdMap, design, noiseVar):
+def generate_synthetic_data(parameter, fwdModel, design, noiseVar):
 
-    paramDim = fwdMap.parameter.dimension
+    paramDim = fwdModel.parameter.dimension
     sig = sqrt(noiseVar)
 
-    measurement = [fwdMap.evaluate(x) + sig * standard_normal(paramDim)
-                   for x in design]
+    measurement = [fwdModel.point_eval(x, parameter)
+                   + sig * standard_normal(paramDim) for x in design]
 
-    return BayesianRegressionData(design, measurement)
+    return Data(measurement)
