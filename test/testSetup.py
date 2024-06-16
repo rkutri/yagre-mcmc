@@ -62,29 +62,8 @@ class LotkaVolterraParameter(ParameterVector):
         return exp(self.coefficient_)
 
 
-class LotkaVolterraForwardModel(ForwardModelInterface):
-    """
-    Two-dimensional Lotka-Volterra model with fixed parameters alpha and
-    gamma and unknown interaction rates beta and delta (notation from Wiki).
-    Measurement data is the coefficient of the solution at final time T
-    """
-
-    def __init__(self, initialParameter, T, alpha, gamma):
-
-        self.parameter_ = initialParameter
-        self.alpha_ = alpha
-        self.gamma_ = gamma
-        self.T_ = T
-
-    @property
-    def parameter(self):
-
-        return self.parameter_
-
-    @parameter.setter
-    def parameter(self, parameter):
-
-        self.parameter_ = parameter
+class LotkaVolterraSolver:
+    # TODO: split interfaces and implement solver
 
     def flow__(self, t, x):
 
@@ -107,6 +86,31 @@ class LotkaVolterraForwardModel(ForwardModelInterface):
             exit()
 
         return odeResult.y[:, -1]
+
+
+class LotkaVolterraModel(ForwardModelInterface):
+    """
+    Two-dimensional Lotka-Volterra model with fixed parameters alpha and
+    gamma and unknown interaction rates beta and delta (notation from Wiki).
+    Measurement data is the coefficient of the solution at final time T
+    """
+
+    def __init__(self, initialParameter, T, alpha, gamma):
+
+        self.parameter_ = initialParameter
+        self.alpha_ = alpha
+        self.gamma_ = gamma
+        self.T_ = T
+
+    @property
+    def parameter(self):
+
+        return self.parameter_
+
+    @parameter.setter
+    def parameter(self, parameter):
+
+        self.parameter_ = parameter
 
     def full_solution(self, x):
 

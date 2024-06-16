@@ -17,15 +17,18 @@ mcmcMethod = 'pcn'
 truePar = setup.LotkaVolterraParameter.from_interpolation(np.array([0.4, 0.6]))
 alpha = 0.8
 gamma = 0.4
-T = 10.
+timeHorizon = 10.
+dataSize = 10
+
+# define a solver for the forward model
+fixedPar = [timeHorizon, alpha, gamma]
+solver = setup.LotkaVolterraSolver(dataSize, fixedPar)
 
 # define forward model
-fixedPar = [T, alpha, gamma]
-measurementSize = 10
-fwdModel = setup.LotkaVolterraModel(truePar, fixedPar, measurementSize)
+fwdModel = setup.LotkaVolterraModel(dataSize, solver)
 
 # generate the data
-design = [uniform(0.5, 1.5, 2) for _ in range(measurementSize)]
+design = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
 
 dataNoiseVar = 0.04
 data = setup.generate_synthetic_data(truePar, fwdModel, design, dataNoiseVar)
