@@ -1,15 +1,42 @@
+from enum import Enum
+
+class EvaluationStatus(Enum):                                                   
+                                                                                    
+        NONE = -1                                                                   
+        SUCCESS = 0                                                                 
+        FAILURE = 1   
+
 class ForwardMap:
 
     def __init__(self, solver):
 
         self.solver_ = solver
-        self.result_ = None
+
+        self.evalRequest_ = None
+        self.evaluation_ = None
+        self.evalStatus_ = EvaluationStatus.NONE
+
 
     @property
-    def result(self):
-        return self.result_
+    def evaluation(self):
+        return self.evaluation_
 
-    def request_evaluation(self, parameter):
+    @property
+    def status(self):
+        self.evalStatus_
 
-        self.solver_.configure(parameter)
-        self.result_ = self.solver_.invoke()
+    @property
+    def request(self):
+        return self.evalRequest_
+
+    @request.setter
+    def request(self, request):
+        self.evalRequest_ = request
+
+
+    def evaluate(self):
+
+        self.evalRequest_.submit(self.solver_)
+
+        self.evaluation_ = self.solver_.result
+

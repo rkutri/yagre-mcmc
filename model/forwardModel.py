@@ -1,19 +1,19 @@
-from model.evaluation import EvaluationStatus
-from model.forwardMap import ForwardMap
+from model.forwardMap import ForwardMap, EvaluationStatus
 
 
 class ForwardModel:
 
     def __init__(self, solver):
 
-        self.fwdMap_ = ForwardMap(solver)
+        self.solver_ = solver
 
     def evaluate(self, parameter):
 
-        evalStatus = self.fwdMap_.request_evaluation(parameter)
+        self.solver_.interpolate(parameter)
+        self.solver_.invoke()
 
-        if (evalStatus == EvaluationStatus.SUCCESS):
-            return self.fwdMap_.evaluation
+        if (self.solver_.status == EvaluationStatus.SUCCESS):
+            return self.solver_.evaluation
 
         else:
             raise Exception("Evaluation request failed.")

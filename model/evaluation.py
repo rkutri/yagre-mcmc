@@ -1,8 +1,18 @@
 from enum import Enum
+from model.interface import EvaluationRequestInterface
 
 
-class EvaluationStatus(Enum):
+class EvaluateAtDesign(EvaluationRequestInterface):
 
-    NONE = -1
-    SUCCESS = 0
-    FAILURE = 1
+    def __init__(self, parameter, config, design):
+        pass
+
+    @property
+    @abstractmethod
+    def result(self):
+        pass
+
+class EvaluatePointwise(EvaluationRequestInterface):
+    pass
+
+
