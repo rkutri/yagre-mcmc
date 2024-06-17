@@ -7,10 +7,6 @@ class ParameterInterface(ABC):
     def from_coefficient(cls, coefficient):
         pass
 
-    @abstractclassmethod
-    def from_interpolation(cls, values):
-        pass
-
     @abstractproperty
     def dimension(self):
         pass
@@ -25,4 +21,8 @@ class ParameterInterface(ABC):
 
     @abstractmethod
     def evaluate(self):
+        pass
+
+    @classmethod
+    def from_interpolation(cls, values):
         pass
