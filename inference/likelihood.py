@@ -4,9 +4,9 @@ from inference.interface import LikelihoodInterface
 
 class BayesianRegressionLikelihood(LikelihoodInterface):
 
-    def __init__(self, measurements, forwardModel, noiseModel):
+    def __init__(self, data, forwardModel, noiseModel):
 
-        self.data_ = measurements
+        self.data_ = data
         self.forwardModel_ = forwardModel
         self.noiseModel_ = noiseModel
 
@@ -14,13 +14,13 @@ class BayesianRegressionLikelihood(LikelihoodInterface):
 
         modelResponse = self.forwardModel_.evaluate(parameter)
 
+        dataMisfit = modelResponse - self.data_.array
+
         logL = 0.
 
         for i in range(self.data_.size):
 
-            dataMisfit = modelResponse[i] - self.data_.measurement[i]
-
-            li = -0.5 * self.noiseModel_.induced_norm_squared(dataMisfit)
+            li = -0.5 * self.noiseModel_.induced_norm_squared(dataMisfit[i, :])
 
             logL += li
 

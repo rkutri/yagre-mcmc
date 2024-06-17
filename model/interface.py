@@ -1,32 +1,22 @@
 from abc import ABC, abstractproperty, abstractmethod
 
 
-class ModelProblemInterface(ABC):
-
-    @abstractproperty
-    def solver(self):
-        pass
-
-    @abstractproperty
-    def configuration(self):
-        pass
-
-
-class EvaluationRequestInterface(ABC):
+class SolverInterface(ABC):
 
     @property
     @abstractmethod
-    def result(self):
+    def status(self):
         pass
 
+    @property
+    @abstractmethod
+    def evaluation(self):
+        pass
 
     @abstractmethod
-    def submit(self, solver):
+    def interpolate(self, parameter):
         pass
 
-
-class Solver(ABC):
-
-    @abstractproperty
-    def result(self):
+    @abstractmethod
+    def invoke(self):
         pass

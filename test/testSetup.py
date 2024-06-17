@@ -1,6 +1,6 @@
 from sys import exit
 
-from numpy import exp, log, square, sqrt
+from numpy import exp, log, square, sqrt, zeros
 from numpy.random import standard_normal
 from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
@@ -9,7 +9,7 @@ from parameter.vector import ParameterVector
 from inference.interface import TargetDensityInterface
 from inference.data import Data
 from model.interface import SolverInterface
-from model.forwardModel import ForwardModel
+from model.forwardModel import EvaluationStatus
 
 
 class GaussianTargetDensity1d(TargetDensityInterface):
@@ -22,8 +22,8 @@ class GaussianTargetDensity1d(TargetDensityInterface):
     def evaluate_ratio(self, num, denom):
 
         return exp(0.5 / self.var_
-                * (square(self.mean_.coefficient - denom.coefficient)
-                   - square(self.mean_.coefficient - num.coefficient)))
+                   * (square(self.mean_.coefficient - denom.coefficient)
+                      - square(self.mean_.coefficient - num.coefficient)))
 
     def evaluate_on_mesh(self, mesh):
 
@@ -62,20 +62,41 @@ class LotkaVolterraParameter(ParameterVector):
 
 class LotkaVolterraSolver(SolverInterface):
 
-    def __init__(self):
+    def __init__(self, design, config):
+
+        self.x_ = design
+        self.tBoundary_ = (0., config['T'])
+        self.fixedParam_ = [config['alpha'], config['gamma']]
+        self.dataShape_ = (config['nData'], config['dataDim'])
 
         self.param_ = [None, None]
+        self.evaluation_ = None
+        self.status_ = EvaluationStatus.NONE
 
+    @property
+    def status(self):
+        return self.status_
+
+    @property
+    def dataShape(self):
+        return self.dataShape_
+
+    @property
+    def nData(self):
+        return self.dataShape_[0]
+
+    @property
+    def dataDim(self):
+        return self.dataShape_[1]
+
+    @property
+    def evaluation(self):
+        return self.evaluation_
 
     def flow__(self, t, x, alpha, beta, gamma, delta):
 
         return [alpha * x[0] - beta * x[0] * x[1],
                 delta * x[0] * x[1] - gamma * x[1]]
-
-
-    def configure(self, config):
-        pass
-
 
     def interpolate(self, parameter):
 
@@ -83,45 +104,52 @@ class LotkaVolterraSolver(SolverInterface):
 
         self.param_ = [paramEval[0], paramEval[1]]
 
-        return 
+        return
 
     def invoke(self):
 
-        alpha = 
-        beta = 
-        gamma = 
-        delta = 
+        self.status_ = EvaluationStatus.SUCCESS
 
-        odeResult = solve_ivp(self.flow_, tBoundary, x,
-                             args=(alpha, beta, gamma, delta), method='LSODA')
+        alpha = self.fixedParam_[0]
+        beta = self.param_[0]
+        gamma = self.fixedParam_[1]
+        delta = self.param_[1]
 
-        if (odeResult.status != 0):
+        evaluation = zeros(self.dataShape_)
 
-            print("forward map evaluation failed. aborting program.")
-            print(odeResult.message)
-            exit()
+        for n in range(self.dataShape_[0]):
 
-        self.evaluation_ = odeResult.y[:, -1]
+            odeResult = solve_ivp(
+                self.flow__, self.tBoundary_, self.x_[n, :],
+                args=(alpha, beta, gamma, delta), method='LSODA')
 
+            if (odeResult.status != 0):
 
+                print("forward map evaluation failed. Reason: \n"
+                      + odeResult.message)
 
+                self.status_ = EvaluationStatus.FAILURE
 
-class LotkaVolterraModel(ForwardModel):
+                self.evaluation_ = zeros(self.dataShape_)
 
-    def full_solution(self, parameter, x, config):
+                break
 
-        tBoundary = (0., config['T'])
+            evaluation[n, :] = odeResult.y[:, -1]
 
-        alpha = config['alpha']
-        gamma = config['beta']
+        self.evaluation_ = evaluation
+
+    def full_solution(self, parameter, y0):
 
         paramEval = parameter.evaluate()
 
         beta = paramEval[0]
         delta = paramEval[1]
 
-        odeResult = solve_ivp(self.flow_, tBoundary, x,
-                             args=(alpha, beta, gamma, delta), method='LSODA')
+        alpha = self.fixedParam_[0]
+        gamma = self.fixedParam_[1]
+
+        odeResult = solve_ivp(self.flow__, self.tBoundary_, y0,
+                              args=(alpha, beta, gamma, delta), method='LSODA')
 
         if (odeResult.status != 0):
 
@@ -132,12 +160,13 @@ class LotkaVolterraModel(ForwardModel):
         return (odeResult.t, odeResult.y)
 
 
-def generate_synthetic_data(parameter, fwdModel, design, noiseVar):
+def generate_synthetic_data(parameter, solver, noiseVar):
 
-    paramDim = fwdModel.parameter.dimension
     sig = sqrt(noiseVar)
 
-    measurement = [fwdModel.point_eval(x, parameter)
-                   + sig * standard_normal(paramDim) for x in design]
+    solver.interpolate(parameter)
+    solver.invoke()
+
+    measurement = solver.evaluation + sig * standard_normal(solver.dataDim)
 
     return Data(measurement)

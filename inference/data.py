@@ -1,16 +1,20 @@
 class Data:
-    """
-    data_ : list of numpy.ndarray
-    """
 
-    def __init__(self, data):
+    def __init__(self, dataArray):
 
-        self.data_ = data
+        self.array_ = dataArray
+
+        self.size_ = dataArray.shape[0]
+        self.dim_ = dataArray.shape[1]
 
     @property
     def size(self):
-        return len(self.data_)
+        return self.size_
 
     @property
-    def data(self):
-        return self.data_
+    def dim(self):
+        return self.dim_
+
+    @property
+    def array(self):
+        return self.array_

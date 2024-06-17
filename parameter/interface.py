@@ -22,7 +22,3 @@ class ParameterInterface(ABC):
     @abstractmethod
     def evaluate(self):
         pass
-
-    @classmethod
-    def from_interpolation(cls, values):
-        pass
