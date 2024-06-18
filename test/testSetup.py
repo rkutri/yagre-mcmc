@@ -167,6 +167,6 @@ def generate_synthetic_data(parameter, solver, noiseVar):
     solver.interpolate(parameter)
     solver.invoke()
 
-    measurement = solver.evaluation + sig * standard_normal(solver.dataDim)
+    measurement = solver.evaluation + sig * standard_normal(solver.dataShape)
 
     return Data(measurement)
