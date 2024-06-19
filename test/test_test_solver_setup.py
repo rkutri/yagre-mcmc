@@ -41,7 +41,7 @@ def test_interpolate():
     solver.interpolate(parameter)
 
     np.testing.assert_allclose(solver.param_, np.exp([0.2, 0.3]),
-        rtol=1e-5, atol=1e-8)
+                               rtol=1e-5, atol=1e-8)
 
 
 def test_invoke():

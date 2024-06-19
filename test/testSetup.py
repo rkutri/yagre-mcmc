@@ -117,11 +117,12 @@ class LotkaVolterraSolver(SolverInterface):
 
         evaluation = zeros(self.dataShape_)
 
+        odeFlow = lambda t, x: self.flow__(t, x, alpha, beta, gamma, delta)
+
         for n in range(self.dataShape_[0]):
 
             odeResult = solve_ivp(
-                self.flow__, self.tBoundary_, self.x_[n, :],
-                args=(alpha, beta, gamma, delta), method='LSODA')
+                odeFlow, self.tBoundary_, self.x_[n, :], method='LSODA')
 
             if (odeResult.status != 0):
 
@@ -148,8 +149,8 @@ class LotkaVolterraSolver(SolverInterface):
         alpha = self.fixedParam_[0]
         gamma = self.fixedParam_[1]
 
-        odeResult = solve_ivp(self.flow__, self.tBoundary_, y0,
-                              args=(alpha, beta, gamma, delta), method='LSODA')
+        odeFlow = lambda t, x: self.flow__(t, x, alpha, beta, gamma, delta)
+        odeResult = solve_ivp(odeFlow, self.tBoundary_, y0, method='LSODA')
 
         if (odeResult.status != 0):
 
