@@ -5,11 +5,11 @@ from inference.likelihood import BayesianRegressionLikelihood
 
 class BayesianRegressionModel(BayesianModelInterface):
 
-    def __init__(self, data, prior, forwardMap, noiseModel):
+    def __init__(self, data, prior, forwardModel, noiseModel):
 
         self.prior_ = prior
         self.likelihood_ = BayesianRegressionLikelihood(
-            data, forwardMap, noiseModel)
+            data, forwardModel, noiseModel)
 
     @property
     def prior(self):

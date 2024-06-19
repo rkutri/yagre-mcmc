@@ -1,25 +1,25 @@
-from abc import ABC, abstractproperty, abstractmethod, abstractclassmethod
+from abc import ABC, abstractmethod
 
 
 class ParameterInterface(ABC):
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def from_coefficient(cls, coefficient):
         pass
 
-    @abstractclassmethod
-    def from_interpolation(cls, values):
-        pass
-
-    @abstractproperty
+    @property
+    @abstractmethod
     def dimension(self):
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def coefficient_type(self):
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def coefficient(self):
         pass
 

@@ -5,13 +5,16 @@ from inference.interface import TargetDensityInterface
 
 
 class MetropolisHastings(ABC):
+    """
+    Template class for Metropolis-Hastings type Markov chains
+    """
 
     def __init__(self, targetDensity: TargetDensityInterface) -> None:
 
         self.chain_ = []
         self.targetDensity_ = targetDensity
 
-    @abstractclassmethod
+    @classmethod
     def from_bayes_model(cls, model):
         pass
 

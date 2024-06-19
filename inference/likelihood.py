@@ -1,28 +1,24 @@
 from numpy import exp
 from inference.interface import LikelihoodInterface
 
+from inference.data import Data
+import numpy as np
 
 class BayesianRegressionLikelihood(LikelihoodInterface):
 
-    def __init__(self, data, forwardMap, noiseModel):
+    def __init__(self, data, forwardModel, noiseModel):
 
         self.data_ = data
-        self.forwardMap_ = forwardMap
+        self.fwdModel_ = forwardModel
         self.noiseModel_ = noiseModel
 
     def evaluate_log_likelihood(self, parameter):
 
-        self.forwardMap_.parameter = parameter
+        dataMisfit = self.fwdModel_.evaluate(parameter) - self.data_.array
 
-        logL = 0.
+        dmNormSquared = np.apply_along_axis(
+            lambda x: self.noiseModel_.induced_norm_squared(x), 1, dataMisfit)
 
-        for i in range(self.data_.size):
-
-            dataMisfit = self.forwardMap_.evaluate(self.data_.design[i])
-            dataMisfit -= self.data_.measurement[i]
-
-            li = -0.5 * self.noiseModel_.induced_norm_squared(dataMisfit)
-
-            logL += li
+        logL = -0.5 * np.sum(dmNormSquared)
 
         return logL

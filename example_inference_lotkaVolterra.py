@@ -4,31 +4,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from numpy.random import uniform
+from model.forwardModel import ForwardModel
 from inference.parameterLaw import IIDGaussian
 from inference.noise import CentredGaussianIIDNoise
-from inference.bayes import BayesianRegressionModel
+from inference.bayesModel import BayesianRegressionModel
 from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 
 # current options are 'mrw', 'pcn'
-mcmcMethod = 'pcn'
+mcmcMethod = 'mrw'
+
+# define model problem
+config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}
+design = np.array([uniform(0.5, 1.5, 2) for _ in range(config['nData'])])
+
+# define forward problem
+solver = setup.LotkaVolterraSolver(design, config)
+fwdModel = ForwardModel(solver)
 
 # define problem parameters
 groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
-alpha = 0.8
-gamma = 0.4
-T = 10.
 
-# define forward map
-fwdMap = setup.LotkaVolterraForwardMap(groundTruth, T, alpha, gamma)
-
-# generate the data
-dataSize = 10
-design = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
-
-dataNoiseVariance = 0.04
-data = setup.generate_synthetic_data(fwdMap, design, dataNoiseVariance)
+# generate data
+dataNoiseVar = 0.04
+data = setup.generate_synthetic_data(groundTruth, solver, dataNoiseVar)
 
 print("synthetic data generated")
 
@@ -38,11 +38,11 @@ priorVariance = 1.
 prior = IIDGaussian(priorMean, priorVariance)
 
 # define a noise model
-noiseVariance = dataNoiseVariance
+noiseVariance = dataNoiseVar
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
 # define the statistical inverse problem
-statModel = BayesianRegressionModel(data, prior, fwdMap, noiseModel)
+statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
 if (mcmcMethod == 'mrw'):
 
@@ -51,16 +51,14 @@ if (mcmcMethod == 'mrw'):
 
 elif (mcmcMethod == 'pcn'):
 
-    if (not np.allclose(priorMean.evaluate(), np.zeros(2))):
-
-        priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-        prior = IIDGaussian(priorMean, priorVariance)
+    if (not np.allclose(priorMean.coefficient, np.zeros(2))):
+        raise Exception("PCN requires centred prior.")
 
     stepSize = 0.02
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
 else:
-    raise Exception("Unknown MCMC method " + str(mcmcMethod))
+    raise Exception("Unknown MCMC method: " + str(mcmcMethod))
 
 # run mcmc
 nSteps = 1000
@@ -130,14 +128,12 @@ ax[0].legend()
 ax[0].grid(True, which='both', linestyle='--',
            linewidth=0.5, color='gray', alpha=0.7)
 
-fwdMap.parameter = groundTruth
-trueSol = fwdMap.full_solution([1., 1.])
+trueSol = solver.full_solution(groundTruth, np.array([1., 1.]))
 tGridSol = trueSol[0]
 xSol = trueSol[1][0, :]
 ySol = trueSol[1][1, :]
 
-fwdMap.parameter = posteriorMean
-estSol = fwdMap.full_solution([1., 1.])
+estSol = solver.full_solution(posteriorMean, np.array([1., 1.]))
 tGridEst = estSol[0]
 xEst = estSol[1][0, :]
 yEst = estSol[1][1, :]

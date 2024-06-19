@@ -1,42 +1,20 @@
-from inference.interface import DataInterface
+class Data:
 
+    def __init__(self, dataArray):
 
-class InputOutputData(DataInterface):
+        self.array_ = dataArray
 
-    def __init__(self, inData, outData):
-
-        assert len(inData) == len(outData)
-
-        self.nData_ = len(inData)
-        self.inData_ = inData
-        self.outData_ = outData
+        self.size_ = dataArray.shape[0]
+        self.dim_ = dataArray.shape[1]
 
     @property
     def size(self):
-        return self.nData_
+        return self.size_
 
     @property
-    def input(self):
-        return self.inData_
+    def dim(self):
+        return self.dim_
 
     @property
-    def output(self):
-        return self.outData_
-
-
-class BayesianRegressionData:
-
-    def __init__(self, design, measurement):
-        self.data_ = InputOutputData(design, measurement)
-
-    @property
-    def size(self):
-        return self.data_.size
-
-    @property
-    def design(self):
-        return self.data_.input
-
-    @property
-    def measurement(self):
-        return self.data_.output
+    def array(self):
+        return self.array_

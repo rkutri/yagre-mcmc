@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from parameter.interface import ParameterInterface
 
 
@@ -29,21 +29,6 @@ class BayesianModelInterface(ABC):
 
     @abstractmethod
     def log_likelihood(self, parameter: ParameterInterface) -> float:
-        pass
-
-
-class DataInterface(ABC):
-
-    @abstractproperty
-    def size(self):
-        pass
-
-    @abstractproperty
-    def input(self):
-        pass
-
-    @abstractproperty
-    def output(self):
         pass
 
 

@@ -1,0 +1,106 @@
+import numpy as np
+
+from numpy.random import seed
+from test.testSetup import GaussianTargetDensity1d
+from inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from parameter.scalar import ScalarParameter
+
+
+def test_metropolishastings_initialisation():
+
+    tgtMean = ScalarParameter.from_coefficient(np.array([1.]))
+    tgtVar = 1.
+    tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
+
+    proposalVariance = 0.5
+    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+
+    assert isinstance(mc.targetDensity_, type(tgtDensity))
+    assert mc.chain == []
+
+
+def test_generate_proposal():
+
+    tgtMean = ScalarParameter.from_coefficient(np.array([-1.5]))
+    tgtVar = 0.5
+    tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
+
+    proposalVariance = 0.5
+    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+
+    state = ScalarParameter.from_coefficient(np.array([-3.]))
+    proposal = mc.generate_proposal__(state)
+
+    assert isinstance(proposal, type(state))
+
+
+def test_accept_reject():
+
+    tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
+    tgtVar = 1.
+    tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
+
+    proposalVariance = 1.5
+    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+
+    state = ScalarParameter.from_value(np.array([2.]))
+    proposal = ScalarParameter.from_value(np.array([2.5]))
+
+    acceptedState = mc.accept_reject__(proposal, state)
+
+    assert acceptedState in [proposal, state]
+
+
+def test_run_chain():
+
+    seed(15)
+
+    tgtMean = ScalarParameter.from_coefficient(np.array([1.5]))
+    tgtVar = 1.
+    tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
+
+    proposalVariance = 1.5
+    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+
+    tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
+    tgtVar = 1.
+    tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
+
+    proposalVariance = 0.5
+    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+
+    nSteps = 15000
+    initState = ScalarParameter.from_coefficient(np.array([-3.]))
+    mc.run(nSteps, initState, verbose=False)
+
+    assert len(mc.chain) == nSteps
+
+    states = np.array(mc.chain)
+
+    # postprocessing
+    burnin = 200
+    thinningStep = 6
+
+    mcSamples = states[burnin::thinningStep]
+
+    # estimate mean
+    meanSample = np.mean(mcSamples)
+    meanState = np.mean(states)
+
+    # estimate variance
+    sampleVar = np.var(mcSamples)
+    stateVar = np.var(states)
+
+    # test moments
+    MTOL = 1e-1
+    VTOL = 1e-1
+
+    assert np.abs(tgtMean.coefficient - meanSample) < MTOL
+    assert np.abs(tgtMean.coefficient - meanState) < 2. * MTOL
+
+    assert np.abs(tgtVar - sampleVar) < VTOL
+    assert np.abs(tgtVar - stateVar) < VTOL
+
+
+if __name__ == "__main__":
+    pytest.main()

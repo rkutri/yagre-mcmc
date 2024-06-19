@@ -17,7 +17,7 @@ class ScalarParameter(ParameterInterface):
         return cls(coefficient)
 
     @classmethod
-    def from_interpolation(cls, value):
+    def from_value(cls, value):
         return cls(value)
 
     @property

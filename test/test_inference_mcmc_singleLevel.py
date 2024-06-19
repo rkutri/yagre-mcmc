@@ -1,18 +1,20 @@
+import pytest
 import test.testSetup as setup
 
 import numpy as np
 
-from numpy.random import uniform
+from numpy.random import uniform, seed
 from inference.parameterLaw import IIDGaussian
 from inference.noise import CentredGaussianIIDNoise
-from inference.bayes import BayesianRegressionModel
+from inference.bayesModel import BayesianRegressionModel
 from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from model.forwardModel import ForwardModel
 
 
 def check_mean(means, trueParam):
 
-    MTOL = 1e-1
+    MTOL = 1e-2
 
     meanState = means[0]
     posteriorMean = means[1]
@@ -20,25 +22,25 @@ def check_mean(means, trueParam):
     np.allclose(posteriorMean.coefficient, trueParam.coefficient, atol=MTOL)
     np.allclose(meanState.coefficient, trueParam.coefficient, atol=2. * MTOL)
 
+config = {'T':6., 'alpha':0.8, 'gamma':0.4, 'nData':5, 'dataDim':2}
+design = np.array([
+    np.array([0.1, 0.9]),
+    np.array([0.5, 0.5]),
+    np.array([1. , 0.5]),
+    np.array([0.5, 1. ]),
+    np.array([2.5, 1.5])
+])
+
+# define forward problem
+solver = setup.LotkaVolterraSolver(design, config)
+fwdModel = ForwardModel(solver)
 
 # define problem parameters
 groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
-alpha = 0.8
-gamma = 0.4
-T = 6.
-
-# define forward map
-fwdMap = setup.LotkaVolterraForwardMap(groundTruth, T, alpha, gamma)
-
-# generate the data
-dataSize = 5
-inputData = [uniform(0.5, 1.5, 2) for _ in range(dataSize)]
 
 dataNoiseVariance = 0.05
-data = setup.generate_synthetic_data(fwdMap, inputData, dataNoiseVariance)
-
-print("synthetic data generated")
+data = setup.generate_synthetic_data(groundTruth, solver, dataNoiseVariance)
 
 # start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
@@ -50,10 +52,12 @@ noiseVariance = dataNoiseVariance
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
 # define the statistical inverse problem
-statModel = BayesianRegressionModel(data, prior, fwdMap, noiseModel)
+statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
 
 def test_mrw():
+
+    seed(16)
 
     proposalVariance = 0.01
     mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
@@ -67,7 +71,7 @@ def test_mrw():
     states = mcmc.chain
 
     burnIn = 200
-    thinningStep = 2
+    thinningStep = 3
 
     mcmcSamples = states[burnIn::thinningStep]
     meanState = setup.LotkaVolterraParameter.from_coefficient(
@@ -80,11 +84,13 @@ def test_mrw():
 
 def test_pcn():
 
+    seed(17)
+
     stepSize = 0.001
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
     # run mcmc
-    nSteps = 600
+    nSteps = 600 
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
@@ -92,7 +98,7 @@ def test_pcn():
     states = mcmc.chain
 
     burnIn = 200
-    thinningStep = 2
+    thinningStep = 3
 
     mcmcSamples = states[burnIn::thinningStep]
     meanState = setup.LotkaVolterraParameter.from_coefficient(
@@ -101,3 +107,6 @@ def test_pcn():
         np.mean(mcmcSamples, axis=0))
 
     check_mean([meanState, posteriorMean], groundTruth)
+
+if __name__ == "__main__":
+    pytest.main()
