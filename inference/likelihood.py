@@ -1,10 +1,11 @@
 from numpy import exp
-from inference.interface import LikelihoodInterface
+from inference.interface import DensityInterface
 
 from inference.data import Data
 import numpy as np
 
-class BayesianRegressionLikelihood(LikelihoodInterface):
+
+class BayesianRegressionLikelihood(DensityInterface):
 
     def __init__(self, data, forwardModel, noiseModel):
 
@@ -12,7 +13,7 @@ class BayesianRegressionLikelihood(LikelihoodInterface):
         self.fwdModel_ = forwardModel
         self.noiseModel_ = noiseModel
 
-    def evaluate_log_likelihood(self, parameter):
+    def evaluate_log(self, parameter):
 
         dataMisfit = self.fwdModel_.evaluate(parameter) - self.data_.array
 

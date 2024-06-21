@@ -1,18 +1,16 @@
 from numpy import allclose, zeros_like, sqrt, exp
-from inference.interface import TargetDensityInterface
+from inference.interface import DensityInterface
 from inference.markovChain import MetropolisHastings
 
 
-class PCNTargetDensity(TargetDensityInterface):
+class PCNTargetDensity(DensityInterface):
 
     def __init__(self, likelihood):
 
         self.likelihood_ = likelihood
 
-    def evaluate_ratio(self, sNum, sDenom):
-
-        return exp(self.likelihood_.evaluate_log_likelihood(sNum)
-                   - self.likelihood_.evaluate_log_likelihood(sDenom))
+    def evaluate_log(self, sNum, sDenom):
+        pass
 
 
 class PreconditionedCrankNicolson(MetropolisHastings):
@@ -43,12 +41,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
         t = 2. * self.stepSize_
         return ParamType(
-            sqrt(
-                1. -
-                t) *
-            state.coefficient +
-            sqrt(t) *
-            xi.coefficient)
+            sqrt(1. - t) * state.coefficient + sqrt(t) * xi.coefficient)
 
     def acceptance_probability__(self, proposal, state):
 

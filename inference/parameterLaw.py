@@ -1,11 +1,15 @@
 import numpy as np
-from numpy import sqrt, exp
+from numpy import sqrt, exp, log
 from numpy.random import standard_normal, uniform
-from inference.interface import ParameterLawInterface
+from inference.interface import DensityInterface
 from parameter.interface import ParameterInterface
 
-# TODO: if this becomes too crowded, it might be useful to implement
-#       a suitable factory/builder pattern
+
+class ParameterLaw(DensityInterface):
+
+    @abstractmethod
+    def generate_realisation(self) -> ParameterInterface:
+        pass
 
 
 class IIDGaussian(ParameterLawInterface):
@@ -23,7 +27,7 @@ class IIDGaussian(ParameterLawInterface):
     def mean(self):
         return self.mean_
 
-    def evaluate_log_density(self, state):
+    def evaluate_log(self, state):
 
         x = state.coefficient - self.mean_.coefficient
 
@@ -51,7 +55,7 @@ class Uniform(ParameterLawInterface):
         self.low_ = low
         self.high_ = high
 
-    def evaluate_density(self, state):
+    def evaluate(self, state):
 
         x0 = state.coefficient[0]
         x1 = state.coefficient[1]
@@ -79,6 +83,9 @@ class Uniform(ParameterLawInterface):
                 return 0.
         else:
             return 0.
+
+    def evaluate_log(self, state):
+        return log(self.evaluate(state))
 
     def generate_realisation(self):
 
