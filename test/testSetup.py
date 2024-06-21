@@ -6,40 +6,38 @@ from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
 
 from parameter.vector import ParameterVector
-from inference.interface import TargetDensityInterface
+from inference.interface import DensityInterface
 from inference.data import Data
 from model.interface import SolverInterface
 from model.forwardModel import EvaluationStatus
 
 
-class GaussianTargetDensity1d(TargetDensityInterface):
+class GaussianTargetDensity1d(DensityInterface):
 
     def __init__(self, mean, var):
 
         self.mean_ = mean
         self.var_ = var
 
-    def evaluate_ratio(self, num, denom):
+    def evaluate_log(self, parameter):
 
-        return exp(0.5 / self.var_
-                   * (square(self.mean_.coefficient - denom.coefficient)
-                      - square(self.mean_.coefficient - num.coefficient)))
+        return -0.5 * square(self.mean_.coefficient -
+                             parameter.coefficient) / self.var_
 
     def evaluate_on_mesh(self, mesh):
 
         return exp(-0.5 * square((self.mean_.coefficient - mesh) / self.var_))
 
 
-class GaussianTargetDensity2d(TargetDensityInterface):
+class GaussianTargetDensity2d(DensityInterface):
 
     def __init__(self, mean, cov):
 
         self.dist_ = multivariate_normal(mean.coefficient, cov)
 
-    def evaluate_ratio(self, pNum, pDenom):
+    def evaluate_log(self, parameter):
 
-        return exp(self.dist_.logpdf(pNum.coefficient)
-                   - self.dist_.logpdf(pDenom.coefficient))
+        return self.dist_.logpdf(parameter.coefficient)
 
     def evaluate_on_mesh(self, mesh):
 
@@ -117,7 +115,7 @@ class LotkaVolterraSolver(SolverInterface):
 
         evaluation = zeros(self.dataShape_)
 
-        odeFlow = lambda t, x: self.flow__(t, x, alpha, beta, gamma, delta)
+        def odeFlow(t, x): return self.flow__(t, x, alpha, beta, gamma, delta)
 
         for n in range(self.dataShape_[0]):
 
@@ -149,7 +147,7 @@ class LotkaVolterraSolver(SolverInterface):
         alpha = self.fixedParam_[0]
         gamma = self.fixedParam_[1]
 
-        odeFlow = lambda t, x: self.flow__(t, x, alpha, beta, gamma, delta)
+        def odeFlow(t, x): return self.flow__(t, x, alpha, beta, gamma, delta)
         odeResult = solve_ivp(odeFlow, self.tBoundary_, y0, method='LSODA')
 
         if (odeResult.status != 0):

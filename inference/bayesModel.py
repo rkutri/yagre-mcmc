@@ -21,8 +21,8 @@ class BayesianRegressionModel(BayesianModelInterface):
 
     def log_prior(self, parameter):
 
-        return self.prior_.evaluate_log_density(parameter)
+        return self.prior_.evaluate_log(parameter)
 
     def log_likelihood(self, parameter):
 
-        return self.likelihood_.evaluate_log_likelihood(parameter)
+        return self.likelihood_.evaluate_log(parameter)

@@ -1,4 +1,5 @@
 from parameter.interface import ParameterInterface
+from math import isclose
 
 
 class ScalarParameter(ParameterInterface):
@@ -34,3 +35,10 @@ class ScalarParameter(ParameterInterface):
 
     def evaluate(self):
         return self.coefficient_
+
+    def __eq__(self, other):
+
+        if isinstance(other, ScalarParameter):
+            return isclose(self.coefficient_, other.coefficient)
+
+        return NotImplemented

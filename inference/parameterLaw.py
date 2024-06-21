@@ -1,5 +1,5 @@
-import numpy as np
-from numpy import sqrt, exp, log
+from abc import abstractmethod
+from numpy import sqrt, log, dot
 from numpy.random import standard_normal, uniform
 from inference.interface import DensityInterface
 from parameter.interface import ParameterInterface
@@ -12,7 +12,7 @@ class ParameterLaw(DensityInterface):
         pass
 
 
-class IIDGaussian(ParameterLawInterface):
+class IIDGaussian(ParameterLaw):
     """
     Multivariate Gaussian, where the covariance matrix is diagonal, and
     all the diagonal entries have the same value.
@@ -31,7 +31,7 @@ class IIDGaussian(ParameterLawInterface):
 
         x = state.coefficient - self.mean_.coefficient
 
-        return -0.5 * np.dot(x, x) / self.variance_
+        return -0.5 * dot(x, x) / self.variance_
 
     def generate_realisation(self):
 
@@ -42,7 +42,7 @@ class IIDGaussian(ParameterLawInterface):
         return ParamType(self.mean_.coefficient + sqrt(self.variance_) * xiVal)
 
 
-class Uniform(ParameterLawInterface):
+class Uniform(ParameterLaw):
 
     def __init__(self, low: ParameterInterface,
                  high: ParameterInterface) -> None:

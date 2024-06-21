@@ -1,6 +1,7 @@
-from enum import Enum
+from enum import Enum, unique
 
 
+@unique
 class EvaluationStatus(Enum):
 
     NONE = -1
@@ -14,6 +15,7 @@ class ForwardModel:
 
         self.solver_ = solver
 
+    # use memoisation
     def evaluate(self, parameter):
 
         self.solver_.interpolate(parameter)

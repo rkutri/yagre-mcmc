@@ -1,16 +1,7 @@
-from numpy import allclose, zeros_like, sqrt, exp
+from numpy import zeros, sqrt, exp
 from inference.interface import DensityInterface
 from inference.markovChain import MetropolisHastings
-
-
-class PCNTargetDensity(DensityInterface):
-
-    def __init__(self, likelihood):
-
-        self.likelihood_ = likelihood
-
-    def evaluate_log(self, sNum, sDenom):
-        pass
+from inference.likelihood import BayesianRegressionLikelihood
 
 
 class PreconditionedCrankNicolson(MetropolisHastings):
@@ -21,8 +12,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
         assert 0 < stepSize and stepSize <= 0.5
 
-        priorMeanCoeff = prior.mean.coefficient
-        if (not allclose(priorMeanCoeff, zeros_like(priorMeanCoeff))):
+        if not prior.mean == type(prior.mean)(zeros(prior.mean.dimension)):
             raise ValueError("Preconditioned Crank Nicholson requires "
                              + "centred prior")
 
@@ -31,7 +21,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
     @classmethod
     def from_bayes_model(cls, model, stepSize):
-        return cls(PCNTargetDensity(model.likelihood), model.prior, stepSize)
+        return cls(model.likelihood, model.prior, stepSize)
 
     def generate_proposal__(self, state):
 
@@ -45,6 +35,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
     def acceptance_probability__(self, proposal, state):
 
-        lRatio = self.targetDensity_.evaluate_ratio(proposal, state)
+        lRatio = exp(self.targetDensity_.evaluate_log(proposal)
+            - self.targetDensity_.evaluate_log(state))
 
         return lRatio if lRatio < 1. else 1.

@@ -22,12 +22,13 @@ def check_mean(means, trueParam):
     np.allclose(posteriorMean.coefficient, trueParam.coefficient, atol=MTOL)
     np.allclose(meanState.coefficient, trueParam.coefficient, atol=2. * MTOL)
 
-config = {'T':6., 'alpha':0.8, 'gamma':0.4, 'nData':5, 'dataDim':2}
+
+config = {'T': 6., 'alpha': 0.8, 'gamma': 0.4, 'nData': 5, 'dataDim': 2}
 design = np.array([
     np.array([0.1, 0.9]),
     np.array([0.5, 0.5]),
-    np.array([1. , 0.5]),
-    np.array([0.5, 1. ]),
+    np.array([1., 0.5]),
+    np.array([0.5, 1.]),
     np.array([2.5, 1.5])
 ])
 
@@ -90,7 +91,7 @@ def test_pcn():
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
     # run mcmc
-    nSteps = 600 
+    nSteps = 600
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
@@ -107,6 +108,7 @@ def test_pcn():
         np.mean(mcmcSamples, axis=0))
 
     check_mean([meanState, posteriorMean], groundTruth)
+
 
 if __name__ == "__main__":
     pytest.main()

@@ -1,3 +1,4 @@
+from numpy import allclose
 from parameter.interface import ParameterInterface
 
 
@@ -32,3 +33,14 @@ class ParameterVector(ParameterInterface):
 
     def evaluate(self):
         return self.coefficient_
+
+    def __eq__(self, other):
+
+        aTol = 1e-12
+        rTol = 1e-7
+
+        if isinstance(other, ParameterVector):
+            return allclose(self.coefficient_,
+                            other.coefficient, rtol=rTol, atol=aTol)
+
+        return NotImplemented

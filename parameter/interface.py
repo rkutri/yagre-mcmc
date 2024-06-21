@@ -15,14 +15,13 @@ class ParameterInterface(ABC):
 
     @property
     @abstractmethod
-    def coefficient_type(self):
-        pass
-
-    @property
-    @abstractmethod
     def coefficient(self):
         pass
 
     @abstractmethod
     def evaluate(self):
+        pass
+
+    @abstractmethod
+    def __eq__(self, other):
         pass

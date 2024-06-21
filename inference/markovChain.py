@@ -1,15 +1,15 @@
 from numpy import exp
 from abc import ABC, abstractmethod, abstractclassmethod
 from numpy.random import uniform
-from inference.interface import TargetDensityInterface
+from inference.interface import DensityInterface
 
 
 class MetropolisHastings(ABC):
     """
-    Template class for Metropolis-Hastings type Markov chains
+    Template class for Metropolis-Hastings-type Markov chains
     """
 
-    def __init__(self, targetDensity: TargetDensityInterface) -> None:
+    def __init__(self, targetDensity: DensityInterface) -> None:
 
         self.chain_ = []
         self.targetDensity_ = targetDensity
@@ -22,6 +22,7 @@ class MetropolisHastings(ABC):
     def generate_proposal__(self, state):
         pass
 
+    @abstractmethod
     def acceptance_probability__(self, proposal, state):
         pass
 

@@ -1,8 +1,7 @@
-from numpy import exp
-from inference.interface import DensityInterface
-
-from inference.data import Data
 import numpy as np
+
+from utility.memoisation import EvaluationCache
+from inference.interface import DensityInterface
 
 
 class BayesianRegressionLikelihood(DensityInterface):
@@ -13,7 +12,16 @@ class BayesianRegressionLikelihood(DensityInterface):
         self.fwdModel_ = forwardModel
         self.noiseModel_ = noiseModel
 
+        # by default, only state and proposal likelihoods are required
+        self.llCache_ = EvaluationCache(2)
+
     def evaluate_log(self, parameter):
+        """
+        memoised evaluation of the log-likelihood
+        """
+
+        if self.llCache_.contains(parameter):
+            return self.llCache_(parameter)
 
         dataMisfit = self.fwdModel_.evaluate(parameter) - self.data_.array
 
@@ -21,5 +29,7 @@ class BayesianRegressionLikelihood(DensityInterface):
             lambda x: self.noiseModel_.induced_norm_squared(x), 1, dataMisfit)
 
         logL = -0.5 * np.sum(dmNormSquared)
+
+        self.llCache_.add(parameter, logL)
 
         return logL
