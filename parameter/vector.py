@@ -1,4 +1,4 @@
-from numpy import allclose
+from numpy import array_equal
 from parameter.interface import ParameterInterface
 
 
@@ -36,11 +36,10 @@ class ParameterVector(ParameterInterface):
 
     def __eq__(self, other):
 
-        aTol = 1e-12
-        rTol = 1e-7
-
-        if isinstance(other, ParameterVector):
-            return allclose(self.coefficient_,
-                            other.coefficient, rtol=rTol, atol=aTol)
+        # parameter coefficients are read only, so a check for true equality
+        # (no floating point comparison) is what we want here, as they are not
+        # supposed to change from one evaluation to a subsequent one.
+        if isinstance(other, self.__class__):
+            return array_equal(self.coefficient_, other.coefficient)
 
         return NotImplemented
