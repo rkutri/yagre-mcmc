@@ -36,6 +36,6 @@ class PreconditionedCrankNicolson(MetropolisHastings):
     def acceptance_probability__(self, proposal, state):
 
         lRatio = exp(self.targetDensity_.evaluate_log(proposal)
-            - self.targetDensity_.evaluate_log(state))
+                     - self.targetDensity_.evaluate_log(state))
 
         return lRatio if lRatio < 1. else 1.

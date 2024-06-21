@@ -43,6 +43,6 @@ class MetropolisedRandomWalk(MetropolisHastings):
 
         # proposal is symmetric
         densityRatio = exp(self.targetDensity_.evaluate_log(proposal)
-            - self.targetDensity_.evaluate_log(state))
+                           - self.targetDensity_.evaluate_log(state))
 
         return densityRatio if densityRatio < 1. else 1.

@@ -12,7 +12,7 @@ from inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 
 # current options are 'mrw', 'pcn'
-mcmcMethod = 'mrw'
+mcmcMethod = 'pcn'
 
 # define model problem
 config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}

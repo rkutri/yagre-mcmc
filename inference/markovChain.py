@@ -34,7 +34,7 @@ class MetropolisHastings(ABC):
 
         decision = uniform(low=0., high=1., size=1)
 
-        if (decision <= acceptProb):
+        if decision <= acceptProb:
             return proposal
         else:
             return state
@@ -51,7 +51,7 @@ class MetropolisHastings(ABC):
 
         for n in range(nSteps - 1):
 
-            if (verbose):
+            if verbose:
                 if (n % 50 == 0):
                     if (n == 0):
                         print("Start Markov chain")
