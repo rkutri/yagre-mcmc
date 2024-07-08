@@ -13,7 +13,7 @@ class EvaluationCache:
 
     def add(self, parameter: ParameterInterface, value) -> None:
 
-        if (len(self.cache_) >= self.maxSize_):
+        if len(self.cache_) >= self.maxSize_:
 
             self.keys_.pop(0)
             self.cache_.pop(0)
@@ -22,7 +22,6 @@ class EvaluationCache:
         self.cache_.append(value)
 
         return
-
 
     def contains(self, parameter: ParameterInterface) -> bool:
 
