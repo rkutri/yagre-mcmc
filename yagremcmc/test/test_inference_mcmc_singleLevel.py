@@ -1,15 +1,15 @@
 import pytest
-import test.testSetup as setup
+import yagremcmc.test.testSetup as setup
 
 import numpy as np
 
 from numpy.random import uniform, seed
-from inference.parameterLaw import IIDGaussian
-from inference.noise import CentredGaussianIIDNoise
-from inference.bayesModel import BayesianRegressionModel
-from inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
-from model.forwardModel import ForwardModel
+from yagremcmc.inference.parameterLaw import IIDGaussian
+from yagremcmc.inference.noise import CentredGaussianIIDNoise
+from yagremcmc.inference.bayesModel import BayesianRegressionModel
+from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from yagremcmc.model.forwardModel import ForwardModel
 
 
 def check_mean(means, trueParam):

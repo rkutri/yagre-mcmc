@@ -2,8 +2,8 @@ import pytest
 import numpy as np
 
 from scipy.integrate import solve_ivp
-from test.testSetup import LotkaVolterraSolver, LotkaVolterraParameter
-from model.forwardModel import EvaluationStatus
+from yagremcmc.test.testSetup import LotkaVolterraSolver, LotkaVolterraParameter
+from yagremcmc.model.forwardModel import EvaluationStatus
 
 # Sample configuration
 config = {

@@ -1,5 +1,5 @@
 from numpy import array_equal
-from parameter.interface import ParameterInterface
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class ParameterVector(ParameterInterface):

@@ -1,7 +1,7 @@
 import pytest
 
 from numpy import array
-from utility.memoisation import EvaluationCache
+from yagremcmc.utility.memoisation import EvaluationCache
 
 
 class MockParameterInterface:

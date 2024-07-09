@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from numpy import sqrt, log, dot
 from numpy.random import standard_normal, uniform
-from inference.interface import DensityInterface
-from parameter.interface import ParameterInterface
+from yagremcmc.inference.interface import DensityInterface
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class ParameterLaw(DensityInterface):

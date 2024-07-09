@@ -1,5 +1,5 @@
-from parameter.interface import ParameterInterface
 from math import isclose
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class ScalarParameter(ParameterInterface):

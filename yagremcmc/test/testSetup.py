@@ -5,11 +5,11 @@ from numpy.random import standard_normal
 from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
 
-from parameter.vector import ParameterVector
-from inference.interface import DensityInterface
-from inference.data import Data
-from model.interface import SolverInterface
-from model.forwardModel import EvaluationStatus
+from yagremcmc.parameter.vector import ParameterVector
+from yagremcmc.inference.interface import DensityInterface
+from yagremcmc.inference.data import Data
+from yagremcmc.model.interface import SolverInterface
+from yagremcmc.model.forwardModel import EvaluationStatus
 
 
 class GaussianTargetDensity1d(DensityInterface):

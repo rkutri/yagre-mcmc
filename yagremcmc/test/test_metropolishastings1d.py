@@ -1,9 +1,9 @@
 import numpy as np
 
 from numpy.random import seed
-from test.testSetup import GaussianTargetDensity1d
-from inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from parameter.scalar import ScalarParameter
+from yagremcmc.test.testSetup import GaussianTargetDensity1d
+from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.parameter.scalar import ScalarParameter
 
 
 def test_metropolishastings_initialisation():

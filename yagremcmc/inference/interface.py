@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from parameter.interface import ParameterInterface
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class DensityInterface(ABC):

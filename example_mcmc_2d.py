@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from test.testSetup import GaussianTargetDensity2d
-from inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from parameter.vector import ParameterVector
+from yagremcmc.test.testSetup import GaussianTargetDensity2d
+from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.parameter.vector import ParameterVector
 
 
 tgtMean = ParameterVector(np.array([1., 1.5]))

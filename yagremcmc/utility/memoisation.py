@@ -1,4 +1,4 @@
-from parameter.interface import ParameterInterface
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class EvaluationCache:

@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
-import test.testSetup as ts
+import yagremcmc.test.testSetup as ts
 
-from inference.data import Data
-from model.forwardModel import EvaluationStatus
+from yagremcmc.inference.data import Data
+from yagremcmc.model.forwardModel import EvaluationStatus
 
 # Sample configuration
 config = {

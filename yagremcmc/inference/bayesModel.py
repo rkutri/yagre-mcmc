@@ -1,6 +1,6 @@
 from numpy import exp
-from inference.interface import BayesianModelInterface
-from inference.likelihood import BayesianRegressionLikelihood
+from yagremcmc.inference.interface import BayesianModelInterface
+from yagremcmc.inference.likelihood import BayesianRegressionLikelihood
 
 
 class BayesianRegressionModel(BayesianModelInterface):

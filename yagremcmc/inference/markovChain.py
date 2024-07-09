@@ -1,7 +1,7 @@
 from numpy import exp
 from abc import ABC, abstractmethod, abstractclassmethod
 from numpy.random import uniform
-from inference.interface import DensityInterface
+from yagremcmc.inference.interface import DensityInterface
 
 
 class MetropolisHastings(ABC):

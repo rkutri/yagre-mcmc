@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from inference.data import Data
-from inference.interface import NoiseModelInterface
-from inference.likelihood import BayesianRegressionLikelihood
-from parameter.vector import ParameterVector
-from utility.memoisation import EvaluationCache
+from yagremcmc.inference.data import Data
+from yagremcmc.inference.interface import NoiseModelInterface
+from yagremcmc.inference.likelihood import BayesianRegressionLikelihood
+from yagremcmc.parameter.vector import ParameterVector
+from yagremcmc.utility.memoisation import EvaluationCache
 
 
 class MockNoise(NoiseModelInterface):

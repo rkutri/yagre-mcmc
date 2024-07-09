@@ -1,7 +1,7 @@
 from numpy import exp
-from inference.markovChain import MetropolisHastings
-from inference.parameterLaw import IIDGaussian
-from inference.interface import DensityInterface
+from yagremcmc.inference.markovChain import MetropolisHastings
+from yagremcmc.inference.parameterLaw import IIDGaussian
+from yagremcmc.inference.interface import DensityInterface
 
 
 class UnnormalisedPosterior(DensityInterface):
