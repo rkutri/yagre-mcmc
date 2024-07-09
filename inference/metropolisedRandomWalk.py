@@ -1,19 +1,9 @@
 from numpy import exp
 from inference.markovChain import MetropolisHastings
 from inference.parameterLaw import IIDGaussian
-from inference.interface import DensityInterface
+from inference.density import UnnormalisedPosterior
 
 
-class UnnormalisedPosterior(DensityInterface):
-
-    def __init__(self, model):
-
-        self.model_ = model
-
-    def evaluate_log(self, parameter):
-
-        return self.model_.log_likelihood(parameter) \
-            + self.model_.log_prior(parameter)
 
 
 class MetropolisedRandomWalk(MetropolisHastings):
