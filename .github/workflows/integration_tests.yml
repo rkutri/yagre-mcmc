@@ -32,4 +32,4 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python3 -m pytest test
+          python3 -m pytest yagremcmc/test
