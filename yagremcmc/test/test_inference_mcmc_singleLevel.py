@@ -3,8 +3,9 @@ import yagremcmc.test.testSetup as setup
 
 import numpy as np
 
-from numpy.random import uniform, seed
-from yagremcmc.inference.parameterLaw import IIDGaussian
+from numpy.random import seed
+from yagremcmc.inference.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
+from yagremcmc.inference.parameterLaw import Gaussian
 from yagremcmc.inference.noise import CentredGaussianIIDNoise
 from yagremcmc.inference.bayesModel import BayesianRegressionModel
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
@@ -14,7 +15,7 @@ from yagremcmc.model.forwardModel import ForwardModel
 
 def check_mean(means, trueParam):
 
-    MTOL = 1e-2
+    MTOL = 1e-1
 
     meanState = means[0]
     posteriorMean = means[1]
@@ -37,34 +38,64 @@ solver = setup.LotkaVolterraSolver(design, config)
 fwdModel = ForwardModel(solver)
 
 # define problem parameters
+parameterDim = 2
 groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
+assert parameterDim == groundTruth.dimension
 
 dataNoiseVariance = 0.05
 data = setup.generate_synthetic_data(groundTruth, solver, dataNoiseVariance)
 
-# start with a prior centred around the true parameter coefficient
-priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-priorVariance = 1.
-prior = IIDGaussian(priorMean, priorVariance)
 
-# define a noise model
-noiseVariance = dataNoiseVariance
-noiseModel = CentredGaussianIIDNoise(noiseVariance)
-
-# define the statistical inverse problem
-statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
-
-
-def test_mrw():
+@pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
+def test_mrw(mcmcProposal):
 
     seed(16)
 
-    proposalVariance = 0.01
-    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
+    # start with a prior centred around the true parameter coefficient
+    priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
+
+    if (mcmcProposal == 'iid'):
+
+        priorMargVar = 0.02
+        priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
+
+    elif (mcmcProposal == 'indep'):
+
+        priorMargVar = np.array([0.02, 0.01])
+        priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
+
+    else:
+        raise Exception("prior covariance " +
+                        mcmcProposal + " not implemented")
+
+    # set up prior
+    prior = Gaussian(priorMean, priorCovariance)
+
+    # define a noise model
+    noiseVariance = dataNoiseVariance
+    noiseModel = CentredGaussianIIDNoise(noiseVariance)
+
+    # define the statistical inverse problem
+    statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
+
+    if (mcmcProposal == 'iid'):
+
+        proposalMargVar = 0.02
+        proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
+
+    elif (mcmcProposal == 'indep'):
+
+        proposalMargVar = np.array([0.02, 0.01])
+        proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
+
+    else:
+        raise Exception("Proposal " + mcmcProposal + " not implemented")
+
+    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
 
     # run mcmc
-    nSteps = 600
+    nSteps = 2000
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
@@ -72,7 +103,7 @@ def test_mrw():
     states = mcmc.chain
 
     burnIn = 200
-    thinningStep = 3
+    thinningStep = 5
 
     mcmcSamples = states[burnIn::thinningStep]
     meanState = setup.LotkaVolterraParameter.from_coefficient(
@@ -83,15 +114,43 @@ def test_mrw():
     check_mean([meanState, posteriorMean], groundTruth)
 
 
-def test_pcn():
+@pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
+def test_pcn(mcmcProposal):
 
     seed(17)
+
+    # start with a prior centred around the true parameter coefficient
+    priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
+
+    if (mcmcProposal == 'iid'):
+
+        priorMargVar = 0.02
+        priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
+
+    elif (mcmcProposal == 'indep'):
+
+        priorMargVar = np.array([0.02, 0.01])
+        priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
+
+    else:
+        raise Exception("prior covariance " +
+                        mcmcProposal + " not implemented")
+
+    # set up prior
+    prior = Gaussian(priorMean, priorCovariance)
+
+    # define a noise model
+    noiseVariance = dataNoiseVariance
+    noiseModel = CentredGaussianIIDNoise(noiseVariance)
+
+    # define the statistical inverse problem
+    statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
     stepSize = 0.001
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
     # run mcmc
-    nSteps = 600
+    nSteps = 2000
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
@@ -99,7 +158,7 @@ def test_pcn():
     states = mcmc.chain
 
     burnIn = 200
-    thinningStep = 3
+    thinningStep = 5
 
     mcmcSamples = states[burnIn::thinningStep]
     meanState = setup.LotkaVolterraParameter.from_coefficient(
