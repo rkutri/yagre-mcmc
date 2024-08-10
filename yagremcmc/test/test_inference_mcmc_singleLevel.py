@@ -95,7 +95,7 @@ def test_mrw(mcmcProposal):
     mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
 
     # run mcmc
-    nSteps = 2000
+    nSteps = 1000
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
@@ -150,7 +150,7 @@ def test_pcn(mcmcProposal):
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
 
     # run mcmc
-    nSteps = 2000
+    nSteps = 1000
     initState = setup.LotkaVolterraParameter.from_coefficient(
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)

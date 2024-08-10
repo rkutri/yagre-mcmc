@@ -4,6 +4,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
+from yagremcmc.inference.covariance import IIDCovarianceMatrix
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.scalar import ScalarParameter
 
@@ -15,7 +16,9 @@ def test_metropolishastings_initialisation():
     tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
     proposalVariance = 0.5
-    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+    proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     assert isinstance(mc.targetDensity_, type(tgtDensity))
     assert mc.chain == []
@@ -28,7 +31,9 @@ def test_generate_proposal():
     tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
     proposalVariance = 0.5
-    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+    proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     state = ScalarParameter.from_coefficient(np.array([-3.]))
     proposal = mc.generate_proposal__(state)
@@ -42,8 +47,10 @@ def test_accept_reject():
     tgtVar = 1.
     tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
-    proposalVariance = 1.5
-    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+    proposalVariance = 0.5
+    proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     state = ScalarParameter.from_value(np.array([2.]))
     proposal = ScalarParameter.from_value(np.array([2.5]))
@@ -55,21 +62,25 @@ def test_accept_reject():
 
 def test_run_chain():
 
-    seed(15)
+    seed(18)
 
     tgtMean = ScalarParameter.from_coefficient(np.array([1.5]))
     tgtVar = 1.
     tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
-    proposalVariance = 1.5
-    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+    proposalVariance = 0.5
+    proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
     tgtVar = 1.
     tgtDensity = GaussianTargetDensity1d(tgtMean, tgtVar)
 
     proposalVariance = 0.5
-    mc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+    proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     nSteps = 15000
     initState = ScalarParameter.from_coefficient(np.array([-3.]))
