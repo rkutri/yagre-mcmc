@@ -1,6 +1,6 @@
 from numpy import exp
 from yagremcmc.inference.markovChain import MetropolisHastings
-from yagremcmc.inference.parameterLaw import IIDGaussian
+from yagremcmc.inference.parameterLaw import Gaussian
 from yagremcmc.inference.interface import DensityInterface
 
 
@@ -18,22 +18,22 @@ class UnnormalisedPosterior(DensityInterface):
 
 class MetropolisedRandomWalk(MetropolisHastings):
 
-    def __init__(self, targetDensity, proposalVariance):
+    def __init__(self, targetDensity, proposalCov):
 
         super().__init__(targetDensity)
 
-        self.proposalVariance_ = proposalVariance
+        self.proposalCov_ = proposalCov
 
     @classmethod
-    def from_bayes_model(cls, model, proposal):
+    def from_bayes_model(cls, model, proposalCov):
 
         targetDensity = UnnormalisedPosterior(model)
 
-        return cls(targetDensity, proposal)
+        return cls(targetDensity, proposalCov)
 
     def generate_proposal__(self, state):
 
-        proposalMeasure = IIDGaussian(state, self.proposalVariance_)
+        proposalMeasure = Gaussian(state, self.proposalCov_)
 
         realisation = proposalMeasure.generate_realisation()
 

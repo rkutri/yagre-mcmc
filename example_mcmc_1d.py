@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
+from yagremcmc.inference.covariance import IIDCovarianceMatrix
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.scalar import ScalarParameter
 
@@ -16,9 +17,9 @@ mesh = np.linspace(-5., 5., 200, endpoint=True)
 tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
 tgtDensityEval /= np.sqrt(2. * np.pi * tgtVar)
 
-
 proposalVariance = 0.5
-mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+proposalCov = IIDCovarianceMatrix(1, proposalVariance)
+mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
 nSteps = 50000
 initState = ScalarParameter(np.array([-3.]))
