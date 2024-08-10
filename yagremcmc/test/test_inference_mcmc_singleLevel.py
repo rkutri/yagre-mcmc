@@ -4,10 +4,10 @@ import yagremcmc.test.testSetup as setup
 import numpy as np
 
 from numpy.random import seed
-from yagremcmc.inference.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.inference.parameterLaw import Gaussian
-from yagremcmc.inference.noise import CentredGaussianIIDNoise
-from yagremcmc.inference.bayesModel import BayesianRegressionModel
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
+from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 from yagremcmc.model.forwardModel import ForwardModel

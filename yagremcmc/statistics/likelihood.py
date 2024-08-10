@@ -1,7 +1,7 @@
 import numpy as np
 
 from yagremcmc.utility.memoisation import EvaluationCache
-from yagremcmc.inference.interface import DensityInterface
+from yagremcmc.statistics.interface import DensityInterface
 
 
 class BayesianRegressionLikelihood(DensityInterface):

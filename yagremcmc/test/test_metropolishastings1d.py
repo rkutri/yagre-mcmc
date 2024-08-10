@@ -4,7 +4,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
-from yagremcmc.inference.covariance import IIDCovarianceMatrix
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.scalar import ScalarParameter
 

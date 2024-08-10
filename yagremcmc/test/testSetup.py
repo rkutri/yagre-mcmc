@@ -6,8 +6,8 @@ from scipy.stats import multivariate_normal
 from scipy.integrate import solve_ivp
 
 from yagremcmc.parameter.vector import ParameterVector
-from yagremcmc.inference.interface import DensityInterface
-from yagremcmc.inference.data import Data
+from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.statistics.data import Data
 from yagremcmc.model.interface import SolverInterface
 from yagremcmc.model.forwardModel import EvaluationStatus
 

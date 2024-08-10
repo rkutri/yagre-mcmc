@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from numpy import sqrt, dot, reciprocal, full
 from numpy.random import standard_normal, uniform
-from yagremcmc.inference.interface import DensityInterface, CovarianceOperatorInterface
+from yagremcmc.statistics.interface import DensityInterface, CovarianceOperatorInterface
 from yagremcmc.parameter.interface import ParameterInterface
 
 

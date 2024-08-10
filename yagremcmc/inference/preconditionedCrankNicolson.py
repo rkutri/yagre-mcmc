@@ -1,7 +1,7 @@
 from numpy import zeros, sqrt, exp
-from yagremcmc.inference.interface import DensityInterface
-from yagremcmc.inference.markovChain import MetropolisHastings
-from yagremcmc.inference.likelihood import BayesianRegressionLikelihood
+from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.inference.metropolisHastings import MetropolisHastings
+from yagremcmc.statistics.likelihood import BayesianRegressionLikelihood
 
 
 class PreconditionedCrankNicolson(MetropolisHastings):

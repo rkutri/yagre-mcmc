@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
-from yagremcmc.inference.parameterLaw import Gaussian
-from yagremcmc.inference.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
-from yagremcmc.inference.noise import CentredGaussianIIDNoise
-from yagremcmc.inference.bayesModel import BayesianRegressionModel
+from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
+from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
 

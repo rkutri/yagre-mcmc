@@ -1,5 +1,5 @@
 from numpy import sqrt, reciprocal, full
-from yagremcmc.inference.interface import CovarianceOperatorInterface
+from yagremcmc.statistics.interface import CovarianceOperatorInterface
 
 
 class DiagonalCovarianceMatrix(CovarianceOperatorInterface):

@@ -1,5 +1,5 @@
 from numpy import dot
-from yagremcmc.inference.interface import NoiseModelInterface
+from yagremcmc.statistics.interface import NoiseModelInterface
 
 
 class CentredGaussianIIDNoise(NoiseModelInterface):
