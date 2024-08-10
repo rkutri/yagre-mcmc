@@ -2,9 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
+from yagremcmc.inference.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.vector import ParameterVector
 
+
+# current options are 'iid', 'indep'
+mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
@@ -12,8 +16,20 @@ tgtCov = np.array(
      [-0.3, 0.4]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
-proposalVariance = 0.25
-mcmc = MetropolisedRandomWalk(tgtDensity, proposalVariance)
+if (mcmcProposal == 'iid'):
+
+    proposalMargVar = 0.25
+    proposalCov = IIDCovarianceMatrix(tgtMean.dimension, proposalMargVar)
+
+elif (mcmcProposal == 'indep'):
+
+    proposalMargVar = np.array([tgtCov[0, 0], tgtCov[1, 1]])
+    proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
+
+else:
+    raise Exception("Proposal " + mcmcProposal + " not implemented")
+
+mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
 nSteps = 10000
 initState = ParameterVector(np.array([-8., -7.]))

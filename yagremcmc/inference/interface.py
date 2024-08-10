@@ -9,6 +9,17 @@ class DensityInterface(ABC):
         pass
 
 
+class CovarianceOperatorInterface(ABC):
+
+    @abstractmethod
+    def apply_sqrt(self, x):
+        pass
+
+    @abstractmethod
+    def apply_inverse(self, x):
+        pass
+
+
 class BayesianModelInterface(ABC):
 
     @abstractmethod

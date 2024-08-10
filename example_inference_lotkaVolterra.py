@@ -5,11 +5,15 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
-from yagremcmc.inference.parameterLaw import IIDGaussian
+from yagremcmc.inference.parameterLaw import Gaussian
+from yagremcmc.inference.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.inference.noise import CentredGaussianIIDNoise
 from yagremcmc.inference.bayesModel import BayesianRegressionModel
 from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+
+# current options are 'iid', 'indep'
+mcmcProposal = 'iid'
 
 # current options are 'mrw', 'pcn'
 mcmcMethod = 'pcn'
@@ -23,8 +27,10 @@ solver = setup.LotkaVolterraSolver(design, config)
 fwdModel = ForwardModel(solver)
 
 # define problem parameters
+parameterDim = 2
 groundTruth = setup.LotkaVolterraParameter.from_interpolation(
     np.array([0.4, 0.6]))
+assert groundTruth.dimension == parameterDim
 
 # generate data
 dataNoiseVar = 0.04
@@ -34,8 +40,22 @@ print("synthetic data generated")
 
 # start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-priorVariance = 1.
-prior = IIDGaussian(priorMean, priorVariance)
+
+if (mcmcProposal == 'iid'):
+
+    priorMargVar = 0.02
+    priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
+
+elif (mcmcProposal == 'indep'):
+
+    priorMargVar = np.array([0.02, 0.01])
+    priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
+
+else:
+    raise Exception("prior covariance " + mcmcProposal + " not implemented")
+
+# set up prior
+prior = Gaussian(priorMean, priorCovariance)
 
 # define a noise model
 noiseVariance = dataNoiseVar
@@ -46,13 +66,22 @@ statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
 if (mcmcMethod == 'mrw'):
 
-    proposalVariance = 0.02
-    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalVariance)
+    if (mcmcProposal == 'iid'):
+
+        proposalMargVar = 0.02
+        proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
+
+    elif (mcmcProposal == 'indep'):
+
+        proposalMargVar = np.array([0.02, 0.01])
+        proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
+
+    else:
+        raise Exception("Proposal " + mcmcProposal + " not implemented")
+
+    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
 
 elif (mcmcMethod == 'pcn'):
-
-    if (not np.allclose(priorMean.coefficient, np.zeros(2))):
-        raise Exception("PCN requires centred prior.")
 
     stepSize = 0.02
     mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
