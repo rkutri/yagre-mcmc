@@ -9,14 +9,17 @@ from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from yagremcmc.inference.monteCarlo import MonteCarlo
 
 # current options are 'iid', 'indep'
+# TODO: add 'adaptive'
 mcmcProposal = 'iid'
 
+# TODO: multilevel as future option
+
+# abstract factory product variants
 # current options are 'mrw', 'pcn'
-mcmcMethod = 'pcn'
+mcmcMethod = 'pcn' 
 
 # define model problem
 config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}
@@ -64,37 +67,16 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
-if (mcmcMethod == 'mrw'):
-
-    if (mcmcProposal == 'iid'):
-
-        proposalMargVar = 0.02
-        proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
-
-    elif (mcmcProposal == 'indep'):
-
-        proposalMargVar = np.array([0.02, 0.01])
-        proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
-
-    else:
-        raise Exception("Proposal " + mcmcProposal + " not implemented")
-
-    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
-
-elif (mcmcMethod == 'pcn'):
-
-    stepSize = 0.02
-    mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
-
-else:
-    raise Exception("Unknown MCMC method: " + str(mcmcMethod))
+# configure the inference method
+inferenceConfig = {}
+mc = MonteCarlo(statModel, inferenceConfig)
 
 # run mcmc
 nSteps = 1000
 initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-mcmc.run(nSteps, initState)
+mc.run(nSteps, initState)
 
-states = mcmc.chain
+states = mc.chain
 
 burnIn = 100
 thinningStep = 3

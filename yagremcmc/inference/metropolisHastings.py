@@ -1,12 +1,12 @@
 from numpy import exp
-from abc import ABC, abstractmethod, abstractclassmethod
+from abc import ABC, abstractmethod
 from numpy.random import uniform
 from yagremcmc.statistics.interface import DensityInterface
 
 
 class MetropolisHastings(ABC):
     """
-    Template class for Metropolis-Hastings-type Markov chains
+    Template class for Metropolis-Hastings-type chains
     """
 
     def __init__(self, targetDensity: DensityInterface) -> None:
