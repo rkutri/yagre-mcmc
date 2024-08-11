@@ -42,7 +42,7 @@ def test_moments(mcmcProposal):
     initState = ParameterVector.from_coefficient(np.array([-2., 0.]))
     mcmc.run(nSteps, initState, verbose=False)
 
-    states = np.array(mcmc.chain)
+    states = np.array(mcmc.states)
 
     # Postprocessing
     burnin = 200

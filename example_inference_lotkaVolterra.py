@@ -81,7 +81,8 @@ elif method == 'mrw':
         raise Exception("Adaptive Metropolis not yet implemented")
 
     else:
-        raise ValueError("Unknown Proposal covariance type: " + proposalCovType)
+        raise ValueError(
+            "Unknown Proposal covariance type: " + proposalCovType)
 
     chainFactory.set_proposal_covariance(proposalCov)
 

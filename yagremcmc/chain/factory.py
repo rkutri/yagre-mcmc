@@ -21,11 +21,10 @@ class ChainFactory(ABC):
         if self.bayesModel_ is None and self.explicitTarget_ is None:
             raise ValueError("Either bayesian model or explicit target density"
                              + " must be provided for chain setup")
-        
+
         if self.bayesModel_ is not None and self.explicitTarget_ is not None:
             raise ValueError("Only one of bayes model or explicit target"
                              + " density should be provided.")
-    
 
     def target_is_posterior(self):
 
@@ -33,13 +32,11 @@ class ChainFactory(ABC):
 
         return self.bayesModel_ is not None
 
-    
     def target_is_explicit(self):
 
         self.validate()
 
         return self.explicitTarget_ is not None
-
 
     @abstractmethod
     def build_from_model(self) -> MetropolisHastings:
@@ -48,7 +45,6 @@ class ChainFactory(ABC):
     @abstractmethod
     def build_from_target(self) -> MetropolisHastings:
         pass
-
 
     def build_chain(self):
 

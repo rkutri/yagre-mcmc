@@ -43,16 +43,14 @@ class PCNFactory(ChainFactory):
         super().__init__()
         self.stepSize_ = None
 
-
     def set_step_size(self, stepSize):
         self.stepSize_ = stepSize
 
-    
     def build_from_model(self) -> MetropolisHastings:
 
         return PreconditionedCrankNicolson(self.bayesModel_.likelihood, self.bayesModel_.prior, self.stepSize_)
 
-
     def build_from_target(self) -> MetropolisHastings:
 
-        raise RuntimeError("PCN is only defined in relation to a Bayesian model")
+        raise RuntimeError(
+            "PCN is only defined in relation to a Bayesian model")

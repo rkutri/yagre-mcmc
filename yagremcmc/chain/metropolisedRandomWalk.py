@@ -25,7 +25,6 @@ class MetropolisedRandomWalk(MetropolisHastings):
 
         self.proposalCov_ = proposalCov
 
-
     def generate_proposal__(self, state):
 
         proposalMeasure = Gaussian(state, self.proposalCov_)
@@ -50,11 +49,9 @@ class MRWFactory(ChainFactory):
         super().__init__()
         self.proposalCov_ = None
 
-
     def set_proposal_covariance(self, covariance):
 
         self.proposalCov_ = covariance
-
 
     def build_from_model(self) -> MetropolisHastings:
 
@@ -64,7 +61,6 @@ class MRWFactory(ChainFactory):
         targetDensity = UnnormalisedPosterior(self.bayesModel_)
 
         return MetropolisedRandomWalk(targetDensity, self.proposalCov_)
-
 
     def build_from_target(self) -> MetropolisHastings:
 
