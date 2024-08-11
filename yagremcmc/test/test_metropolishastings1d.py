@@ -21,7 +21,7 @@ def test_metropolishastings_initialisation():
     mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
     assert isinstance(mc.targetDensity_, type(tgtDensity))
-    assert mc.chain == []
+    assert mc.states == []
 
 
 def test_generate_proposal():
@@ -86,9 +86,9 @@ def test_run_chain():
     initState = ScalarParameter.from_coefficient(np.array([-3.]))
     mc.run(nSteps, initState, verbose=False)
 
-    assert len(mc.chain) == nSteps
+    assert len(mc.states) == nSteps
 
-    states = np.array(mc.chain)
+    states = np.array(mc.states)
 
     # postprocessing
     burnin = 200
