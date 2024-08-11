@@ -36,6 +36,10 @@ class Gaussian(ParameterLaw):
     def mean(self):
         return self.mean_
 
+    @property
+    def covariance(self):
+        return self.cov_
+
     def evaluate_log(self, state: ParameterInterface) -> float:
 
         x = state.coefficient - self.mean_.coefficient

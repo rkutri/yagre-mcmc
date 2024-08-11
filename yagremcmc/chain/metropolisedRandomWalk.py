@@ -1,5 +1,6 @@
 from numpy import exp
-from yagremcmc.inference.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.interface import DensityInterface
 
@@ -24,12 +25,6 @@ class MetropolisedRandomWalk(MetropolisHastings):
 
         self.proposalCov_ = proposalCov
 
-    @classmethod
-    def from_bayes_model(cls, model, proposalCov):
-
-        targetDensity = UnnormalisedPosterior(model)
-
-        return cls(targetDensity, proposalCov)
 
     def generate_proposal__(self, state):
 
@@ -46,3 +41,34 @@ class MetropolisedRandomWalk(MetropolisHastings):
                            - self.targetDensity_.evaluate_log(state))
 
         return densityRatio if densityRatio < 1. else 1.
+
+
+class MRWFactory(ChainFactory):
+
+    def __init__(self):
+
+        super().__init__()
+        self.proposalCov_ = None
+
+
+    def set_proposal_covariance(self, covariance):
+
+        self.proposalCov_ = covariance
+
+
+    def build_from_model(self) -> MetropolisHastings:
+
+        if self.proposalCov_ is None:
+            raise ValueError("Proposal Covariance not set for MRW")
+
+        targetDensity = UnnormalisedPosterior(self.bayesModel_)
+
+        return MetropolisedRandomWalk(targetDensity, self.proposalCov_)
+
+
+    def build_from_target(self) -> MetropolisHastings:
+
+        if self.proposalCov_ is None:
+            raise ValueError("Proposal Covariance not set for MRW")
+
+        return MetropolisedRandomWalk(self.explicitTarget_, self.proposalCov_)

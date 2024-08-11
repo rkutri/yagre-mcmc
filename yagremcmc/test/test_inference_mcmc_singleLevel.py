@@ -8,8 +8,8 @@ from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovaria
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.chain.preconditionedCrankNicolson import PreconditionedCrankNicolson
 from yagremcmc.model.forwardModel import ForwardModel
 
 

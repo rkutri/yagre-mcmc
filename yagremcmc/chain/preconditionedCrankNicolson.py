@@ -1,7 +1,6 @@
 from numpy import zeros, sqrt, exp
-from yagremcmc.statistics.interface import DensityInterface
-from yagremcmc.inference.metropolisHastings import MetropolisHastings
-from yagremcmc.statistics.likelihood import BayesianRegressionLikelihood
+from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.factory import ChainFactory
 
 
 class PreconditionedCrankNicolson(MetropolisHastings):
@@ -19,10 +18,6 @@ class PreconditionedCrankNicolson(MetropolisHastings):
         self.proposalLaw_ = prior
         self.stepSize_ = stepSize
 
-    @classmethod
-    def from_bayes_model(cls, model, stepSize):
-        return cls(model.likelihood, model.prior, stepSize)
-
     def generate_proposal__(self, state):
 
         xi = self.proposalLaw_.generate_realisation()
@@ -39,3 +34,25 @@ class PreconditionedCrankNicolson(MetropolisHastings):
                      - self.targetDensity_.evaluate_log(state))
 
         return lRatio if lRatio < 1. else 1.
+
+
+class PCNFactory(ChainFactory):
+
+    def __init__(self):
+
+        super().__init__()
+        self.stepSize_ = None
+
+
+    def set_step_size(self, stepSize):
+        self.stepSize_ = stepSize
+
+    
+    def build_from_model(self) -> MetropolisHastings:
+
+        return PreconditionedCrankNicolson(self.bayesModel_.likelihood, self.bayesModel_.prior, self.stepSize_)
+
+
+    def build_from_target(self) -> MetropolisHastings:
+
+        raise RuntimeError("PCN is only defined in relation to a Bayesian model")

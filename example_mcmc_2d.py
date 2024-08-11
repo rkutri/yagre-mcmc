@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.vector import ParameterVector
 
 

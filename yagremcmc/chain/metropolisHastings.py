@@ -1,4 +1,3 @@
-from numpy import exp
 from abc import ABC, abstractmethod
 from numpy.random import uniform
 from yagremcmc.statistics.interface import DensityInterface
@@ -11,12 +10,8 @@ class MetropolisHastings(ABC):
 
     def __init__(self, targetDensity: DensityInterface) -> None:
 
-        self.chain_ = []
+        self.states_ = []
         self.targetDensity_ = targetDensity
-
-    @classmethod
-    def from_bayes_model(cls, model):
-        pass
 
     @abstractmethod
     def generate_proposal__(self, state):
@@ -40,14 +35,14 @@ class MetropolisHastings(ABC):
             return state
 
     @property
-    def chain(self):
-        return self.chain_
+    def states(self):
+        return self.states_
 
     def run(self, nSteps, initialState, verbose=True):
 
         state = initialState
 
-        self.chain_ = [state.coefficient]
+        self.states_ = [state.coefficient]
 
         for n in range(nSteps - 1):
 
@@ -62,6 +57,6 @@ class MetropolisHastings(ABC):
 
             state = self.accept_reject__(proposal, state)
 
-            self.chain_.append(state.coefficient)
+            self.states_.append(state.coefficient)
 
         return

@@ -5,21 +5,20 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
+from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
+from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.inference.monteCarlo import MonteCarlo
 
-# current options are 'iid', 'indep'
-# TODO: add 'adaptive'
-mcmcProposal = 'iid'
+# available options are 'mrw', 'pcn'
+method = 'mrw'
 
-# TODO: multilevel as future option
+if method == 'mrw':
 
-# abstract factory product variants
-# current options are 'mrw', 'pcn'
-mcmcMethod = 'pcn' 
+    # available options are 'iid', 'indep', 'adaptive'
+    proposalCovType = 'indep'
 
 # define model problem
 config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}
@@ -44,18 +43,8 @@ print("synthetic data generated")
 # start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
 
-if (mcmcProposal == 'iid'):
-
-    priorMargVar = 0.02
-    priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
-
-elif (mcmcProposal == 'indep'):
-
-    priorMargVar = np.array([0.02, 0.01])
-    priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
-
-else:
-    raise Exception("prior covariance " + mcmcProposal + " not implemented")
+priorMargVar = 1.2
+priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
 
 # set up prior
 prior = Gaussian(priorMean, priorCovariance)
@@ -67,16 +56,48 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
-# configure the inference method
-inferenceConfig = {}
-mc = MonteCarlo(statModel, inferenceConfig)
+# configure the chain setup
+if method == 'pcn':
+
+    chainFactory = PCNFactory()
+    chainFactory.set_step_size(0.01)
+
+elif method == 'mrw':
+
+    chainFactory = MRWFactory()
+
+    if proposalCovType == 'iid':
+
+        proposalMargVar = 0.005
+        proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
+
+    elif proposalCovType == 'indep':
+
+        proposalMargVar = np.array([0.002, 0.006])
+        proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
+
+    elif proposalCovType == 'adaptive':
+
+        raise Exception("Adaptive Metropolis not yet implemented")
+
+    else:
+        raise ValueError("Unknown Proposal covariance type: " + proposalCovType)
+
+    chainFactory.set_proposal_covariance(proposalCov)
+
+else:
+    raise ValueError("Unknown MCMC method: " + method)
+
+chainFactory.set_bayes_model(statModel)
+
+chain = chainFactory.build_chain()
 
 # run mcmc
 nSteps = 1000
 initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-mc.run(nSteps, initState)
+chain.run(nSteps, initState)
 
-states = mc.chain
+states = chain.states
 
 burnIn = 100
 thinningStep = 3
