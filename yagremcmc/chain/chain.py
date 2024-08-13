@@ -7,6 +7,10 @@ class Chain:
     def trajectory(self):
         return self.stateVectors_
 
+    @property
+    def length(self):
+        return len(self.stateVectors_)
+
     def append(self, stateVector):
 
         self.stateVectors_.append(stateVector)

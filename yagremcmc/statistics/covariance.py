@@ -33,3 +33,7 @@ class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
 
         margVar = full(dimension, variance)
         super().__init__(margVar)
+
+
+class AdaptiveCovariance(CovarianceOperatorInterface):
+    pass
