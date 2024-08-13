@@ -18,8 +18,8 @@ class MetropolisHastings(ABC):
         self.proposalMethod_ = proposalMethod
 
     @property
-    def trajectory(self):
-        return self.chain_.trajectory
+    def chain(self):
+        return self.chain_
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -34,16 +34,16 @@ class MetropolisHastings(ABC):
         decision = uniform(low=0., high=1., size=1)
 
         if decision[0] <= acceptProb:
-            return proposal
+            return (proposal, True)
         else:
-            return state
+            return (state, False)
 
     # TODO: switch to Python logging for verbosity
     def run(self, nSteps, initialState, verbose=True):
 
         state = initialState
 
-        self.chain_.add_state_vector(state.coefficient)
+        self.chain_.add_state_vector(state.coefficient, False)
 
         for n in range(nSteps - 1):
 
@@ -57,8 +57,8 @@ class MetropolisHastings(ABC):
             self.proposalMethod_.state = state
             proposal = self.proposalMethod_.generate_proposal()
 
-            state = self._accept_reject(proposal, state)
+            state, isAccepted = self._accept_reject(proposal, state)
 
-            self.chain_.add_state_vector(state.coefficient)
+            self.chain_.add_state_vector(state.coefficient, isAccepted)
 
         return

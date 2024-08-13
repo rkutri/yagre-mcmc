@@ -46,7 +46,7 @@ class ChainFactory(ABC):
     def build_from_target(self) -> MetropolisHastings:
         pass
 
-    def build_chain(self):
+    def build_method(self):
 
         self.validate()
 

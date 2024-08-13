@@ -19,13 +19,13 @@ def test_MRWFactory():
     # Mock the MetropolisedRandomWalk construction
     with pytest.raises(ValueError, match="Proposal Covariance not set for MRW"):
         chainFactory.set_proposal_covariance(None)
-        chainFactory.build_chain()
+        chainFactory.build_method()
 
     chainFactory.set_proposal_covariance(mockProposalCov)
     chainFactory.build_from_model = Mock(return_value=mockChain)
 
     # Build chain
-    chain = chainFactory.build_chain()
+    chain = chainFactory.build_method()
 
     # Assertions
     assert chain == mockChain
@@ -49,7 +49,7 @@ def test_PCNFactory():
     chainFactory.build_from_model = Mock(return_value=mockChain)
 
     # Build chain
-    chain = chainFactory.build_chain()
+    chain = chainFactory.build_method()
 
     # Assertions
     assert chain == mockChain
@@ -67,4 +67,4 @@ def test_PCNFactory_error():
 
     # Ensure RuntimeError is raised
     with pytest.raises(RuntimeError):
-        chainFactory.build_chain()
+        chainFactory.build_method()

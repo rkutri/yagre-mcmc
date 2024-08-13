@@ -25,11 +25,11 @@ nSteps = 50000
 initState = ScalarParameter(np.array([-3.]))
 mcmc.run(nSteps, initState, verbose=False)
 
-states = np.array(mcmc.chain)
+states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
 burnin = int(0.02 * nSteps)
-thinningStep = 5
+thinningStep = 2
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -40,6 +40,7 @@ meanState = np.mean(states)
 print("true mean: " + str(tgtMean.coefficient[0]))
 print("best estimate: " + str(meanSample))
 print("unprocessed estimate: " + str(meanState))
+print("acceptance rate: " + str(mcmc.chain.acceptance_rate()))
 
 plt.hist(states, bins=50, edgecolor='white', alpha=0.4,
          color='red', density=True, label='mc states')

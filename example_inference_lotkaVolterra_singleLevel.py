@@ -12,12 +12,13 @@ from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovaria
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
-# available options are 'mrw', 'pcn'
+# available options are 'mrw', 'pcn', 'adaptive'
 method = 'mrw'
 
-if method == 'mrw':
+if method != 'pcn':
 
-    # available options are 'iid', 'indep', 'adaptive'
+    # available options are 'iid', 'indep'. For adaptive chain, this will
+    # be used as the initial covariance.
     proposalCovType = 'indep'
 
 # define model problem
@@ -91,14 +92,14 @@ else:
 
 chainFactory.set_bayes_model(statModel)
 
-chain = chainFactory.build_chain()
+sampler = chainFactory.build_method()
 
 # run mcmc
 nSteps = 1000
 initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-chain.run(nSteps, initState)
+sampler.run(nSteps, initState)
 
-states = chain.states
+states = sampler.chain.trajectory
 
 burnIn = 100
 thinningStep = 3
@@ -113,6 +114,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print("true parameter: " + str(groundTruth.evaluate()))
 print("raw posterior mean: " + str(meanState.evaluate()))
 print("processed posterior mean: " + str(posteriorMean.evaluate()))
+print("Acceptance rate: " + str(sampler.chain.acceptance_rate()))
 
 # Plotting
 fig, ax = plt.subplots(1, 2)

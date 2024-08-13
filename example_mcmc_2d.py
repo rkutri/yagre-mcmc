@@ -31,11 +31,11 @@ else:
 
 mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
-nSteps = 10000
+nSteps = 20000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState, verbose=False)
 
-states = np.array(mcmc.chain)
+states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
 burnin = int(0.01 * nSteps)
@@ -50,6 +50,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 print("true mean: " + str(tgtMean.coefficient))
 print("mean state: " + str(meanState))
 print("mean estimate: " + str(meanEst))
+print("acceptance rate: " + str(mcmc.chain.acceptance_rate()))
 
 # plotting
 xGrid = np.linspace(-8., 8., 200)

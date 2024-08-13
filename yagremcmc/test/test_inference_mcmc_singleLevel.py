@@ -62,7 +62,6 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
-
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
 def test_mrw(mcmcProposal):
 
@@ -86,7 +85,7 @@ def test_mrw(mcmcProposal):
     chainFactory.set_proposal_covariance(proposalCov)
     chainFactory.set_bayes_model(statModel)
 
-    mcmc = chainFactory.build_chain()
+    mcmc = chainFactory.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -94,7 +93,7 @@ def test_mrw(mcmcProposal):
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.trajectory
+    states = mcmc.chain.trajectory
 
     burnIn = 200
     thinningStep = 5
@@ -116,7 +115,7 @@ def test_pcn():
     chainFactory.set_step_size(0.001)
     chainFactory.set_bayes_model(statModel)
 
-    mcmc = chainFactory.build_chain()
+    mcmc = chainFactory.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -124,7 +123,7 @@ def test_pcn():
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.trajectory
+    states = mcmc.chain.trajectory
 
     burnIn = 200
     thinningStep = 5
