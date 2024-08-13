@@ -55,7 +55,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
         super().__init__(targetDensity, proposalMethod)
 
-    def acceptance_probability__(self, proposal, state):
+    def _acceptance_probability(self, proposal, state):
 
         lRatio = exp(self.targetDensity_.evaluate_log(proposal)
                      - self.targetDensity_.evaluate_log(state))

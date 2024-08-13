@@ -39,7 +39,7 @@ class MRWProposal(ProposalMethodInterface):
 
     def generate_proposal(self):
 
-        if self.state_ == None:
+        if self.state_ is None:
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 
@@ -54,7 +54,7 @@ class MetropolisedRandomWalk(MetropolisHastings):
 
         super().__init__(targetDensity, proposalMethod)
 
-    def acceptance_probability__(self, proposal, state):
+    def _acceptance_probability(self, proposal, state):
 
         # proposal is symmetric
         densityRatio = exp(self.targetDensity_.evaluate_log(proposal)
@@ -72,6 +72,7 @@ class MRWFactory(ChainFactory):
 
     def set_proposal_covariance(self, covariance):
 
+        # TODO: add checks to validate the covariance (e.g. s.p.d.)
         self.proposalCov_ = covariance
 
     def build_from_model(self) -> MetropolisHastings:

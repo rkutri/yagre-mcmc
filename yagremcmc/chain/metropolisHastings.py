@@ -22,22 +22,23 @@ class MetropolisHastings(ABC):
         return self.chain_.trajectory
 
     @abstractmethod
-    def acceptance_probability__(self, proposal, state):
+    def _acceptance_probability(self, proposal, state):
         pass
 
-    def accept_reject__(self, proposal, state):
+    def _accept_reject(self, proposal, state):
 
-        acceptProb = self.acceptance_probability__(proposal, state)
+        acceptProb = self._acceptance_probability(proposal, state)
 
         assert 0. <= acceptProb and acceptProb <= 1.
 
         decision = uniform(low=0., high=1., size=1)
 
-        if decision <= acceptProb:
+        if decision[0] <= acceptProb:
             return proposal
         else:
             return state
 
+    # TODO: switch to Python logging for verbosity
     def run(self, nSteps, initialState, verbose=True):
 
         state = initialState
@@ -56,7 +57,7 @@ class MetropolisHastings(ABC):
             self.proposalMethod_.state = state
             proposal = self.proposalMethod_.generate_proposal()
 
-            state = self.accept_reject__(proposal, state)
+            state = self._accept_reject(proposal, state)
 
             self.chain_.add_state_vector(state.coefficient)
 
