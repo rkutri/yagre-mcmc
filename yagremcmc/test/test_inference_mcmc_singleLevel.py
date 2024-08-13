@@ -62,6 +62,7 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
+
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
 def test_mrw(mcmcProposal):
 

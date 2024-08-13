@@ -38,7 +38,7 @@ def test_accept_reject():
     state = ScalarParameter.from_value(np.array([2.]))
     proposal = ScalarParameter.from_value(np.array([2.5]))
 
-    acceptedState = mc._accept_reject(proposal, state)[0]
+    acceptedState = mc._accept_reject(proposal, state)
 
     assert acceptedState in [proposal, state]
 

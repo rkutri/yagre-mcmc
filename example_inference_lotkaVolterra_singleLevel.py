@@ -114,7 +114,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print("true parameter: " + str(groundTruth.evaluate()))
 print("raw posterior mean: " + str(meanState.evaluate()))
 print("processed posterior mean: " + str(posteriorMean.evaluate()))
-print("Acceptance rate: " + str(sampler.chain.acceptance_rate()))
+print("Acceptance rate: " + str(sampler.diagnostics.acceptance_rate()))
 
 # Plotting
 fig, ax = plt.subplots(1, 2)
