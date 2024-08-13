@@ -1,20 +1,17 @@
 from abc import ABC, abstractmethod
 
 
-class ChainConfiguration(ABC):
+class ProposalMethodInterface(ABC):
 
+    @property
     @abstractmethod
-    def target_is_posterior(self):
+    def state(self):
+        pass
+
+    @state.setter
+    def state(self, newState):
         pass
 
     @abstractmethod
-    def target_is_explicit(self):
-        pass
-
-    @abstractmethod
-    def set_bayes_model(self, model):
-        pass
-
-    @abstractmethod
-    def set_target_density(self, density):
+    def generate_proposal(self):
         pass

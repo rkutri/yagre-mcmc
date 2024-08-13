@@ -1,1 +1,1 @@
-# TODO: Builder pattern for metropolis hastings proposals
+from yagremcmc.chain.interface import ProposalMethodInterface

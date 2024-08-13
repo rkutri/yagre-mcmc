@@ -1,4 +1,5 @@
 from numpy import exp
+from yagremcmc.chain.interface import ProposalMethodInterface
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
@@ -17,21 +18,41 @@ class UnnormalisedPosterior(DensityInterface):
             + self.model_.log_prior(parameter)
 
 
+class MRWProposal(ProposalMethodInterface):
+
+    def __init__(self, proposalCov):
+
+        self.cov_ = proposalCov
+
+        self.state_ = None
+        self.proposalLaw_ = None
+
+    @property
+    def state(self):
+        return self.state_
+
+    @state.setter
+    def state(self, newState):
+
+        self.state_ = newState
+        self.proposalLaw_ = Gaussian(self.state_, self.cov_)
+
+    def generate_proposal(self):
+
+        if self.state_ == None:
+            raise ValueError(
+                "Trying to generate proposal with undefined state")
+
+        return self.proposalLaw_.generate_realisation()
+
+
 class MetropolisedRandomWalk(MetropolisHastings):
 
     def __init__(self, targetDensity, proposalCov):
 
-        super().__init__(targetDensity)
+        proposalMethod = MRWProposal(proposalCov)
 
-        self.proposalCov_ = proposalCov
-
-    def generate_proposal__(self, state):
-
-        proposalMeasure = Gaussian(state, self.proposalCov_)
-
-        realisation = proposalMeasure.generate_realisation()
-
-        return realisation
+        super().__init__(targetDensity, proposalMethod)
 
     def acceptance_probability__(self, proposal, state):
 

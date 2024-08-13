@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from numpy.random import uniform
 from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.chain.interface import ProposalMethodInterface
+from yagremcmc.chain.chain import Chain
 
 
 class MetropolisHastings(ABC):
@@ -8,14 +10,16 @@ class MetropolisHastings(ABC):
     Template class for Metropolis-Hastings-type chains
     """
 
-    def __init__(self, targetDensity: DensityInterface) -> None:
+    def __init__(self, targetDensity: DensityInterface,
+                 proposalMethod: ProposalMethodInterface) -> None:
 
-        self.states_ = []
+        self.chain_ = Chain()
         self.targetDensity_ = targetDensity
+        self.proposalMethod_ = proposalMethod
 
-    @abstractmethod
-    def generate_proposal__(self, state):
-        pass
+    @property
+    def trajectory(self):
+        return self.chain_.trajectory
 
     @abstractmethod
     def acceptance_probability__(self, proposal, state):
@@ -34,15 +38,11 @@ class MetropolisHastings(ABC):
         else:
             return state
 
-    @property
-    def states(self):
-        return self.states_
-
     def run(self, nSteps, initialState, verbose=True):
 
         state = initialState
 
-        self.states_ = [state.coefficient]
+        self.chain_.add_state_vector(state.coefficient)
 
         for n in range(nSteps - 1):
 
@@ -53,10 +53,11 @@ class MetropolisHastings(ABC):
                     else:
                         print(str(n) + " steps computed")
 
-            proposal = self.generate_proposal__(state)
+            self.proposalMethod_.state = state
+            proposal = self.proposalMethod_.generate_proposal()
 
             state = self.accept_reject__(proposal, state)
 
-            self.states_.append(state.coefficient)
+            self.chain_.add_state_vector(state.coefficient)
 
         return

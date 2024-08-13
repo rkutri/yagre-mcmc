@@ -1,13 +1,49 @@
 from numpy import zeros, sqrt, exp
+from yagremcmc.chain.interface import ProposalMethodInterface
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.factory import ChainFactory
+from yagremcmc.statistics.parameterLaw import Gaussian
+
+
+class PCNProposal(ProposalMethodInterface):
+
+    def __init__(self, prior, stepSize):
+
+        if not isinstance(prior, Gaussian):
+            raise NotImplementedError("PCN only supports Gaussian priors")
+
+        self.prior_ = prior
+        self.stepSize_ = stepSize
+
+        self.state_ = None
+        self.proposalLaw_ = None
+
+    @property
+    def state(self):
+        return self.state_
+
+    @state.setter
+    def state(self, newState):
+        self.state_ = newState
+
+    def generate_proposal(self):
+
+        if self.state_ == None:
+            raise ValueError(
+                "Trying to generate proposal with undefined state")
+
+        xi = self.prior_.generate_realisation()
+
+        t = 2. * self.stepSize_
+        ParamType = type(self.state_)
+
+        return ParamType(
+            sqrt(1. - t) * self.state_.coefficient + sqrt(t) * xi.coefficient)
 
 
 class PreconditionedCrankNicolson(MetropolisHastings):
 
     def __init__(self, targetDensity, prior, stepSize):
-
-        super().__init__(targetDensity)
 
         assert 0 < stepSize and stepSize <= 0.5
 
@@ -15,18 +51,9 @@ class PreconditionedCrankNicolson(MetropolisHastings):
             raise ValueError("Preconditioned Crank Nicholson requires "
                              + "centred prior")
 
-        self.proposalLaw_ = prior
-        self.stepSize_ = stepSize
+        proposalMethod = PCNProposal(prior, stepSize)
 
-    def generate_proposal__(self, state):
-
-        xi = self.proposalLaw_.generate_realisation()
-
-        ParamType = type(state)
-
-        t = 2. * self.stepSize_
-        return ParamType(
-            sqrt(1. - t) * state.coefficient + sqrt(t) * xi.coefficient)
+        super().__init__(targetDensity, proposalMethod)
 
     def acceptance_probability__(self, proposal, state):
 

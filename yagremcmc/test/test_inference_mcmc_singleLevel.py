@@ -94,7 +94,7 @@ def test_mrw(mcmcProposal):
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.states
+    states = mcmc.trajectory
 
     burnIn = 200
     thinningStep = 5
@@ -124,7 +124,7 @@ def test_pcn():
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.states
+    states = mcmc.trajectory
 
     burnIn = 200
     thinningStep = 5
