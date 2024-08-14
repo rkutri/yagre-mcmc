@@ -59,11 +59,14 @@ class MetropolisHastings(ABC):
         for n in range(nSteps - 1):
 
             if verbose:
-                if (n % 50 == 0):
+                interval = nSteps // 20
+                if (n % interval == 0):
                     if (n == 0):
                         print("Start Markov chain")
                     else:
+                        ra = self.diagnostics_.rolling_acceptance_rate(interval)
                         print(str(n) + " steps computed")
+                        print("  - rolling acceptance rate: " + str(ra))
 
             self.proposalMethod_.state = state
             proposal = self.proposalMethod_.generate_proposal()

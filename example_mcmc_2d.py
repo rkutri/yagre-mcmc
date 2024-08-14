@@ -33,7 +33,7 @@ mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
 nSteps = 20000
 initState = ParameterVector(np.array([-8., -7.]))
-mcmc.run(nSteps, initState, verbose=False)
+mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
 

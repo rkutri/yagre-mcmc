@@ -12,14 +12,14 @@ from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovaria
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
-# available options are 'mrw', 'pcn', 'adaptive'
+# available options are 'mrw', 'pcn', 'am'
 method = 'mrw'
 
 if method != 'pcn':
 
-    # available options are 'iid', 'indep'. For adaptive chain, this will
-    # be used as the initial covariance.
-    proposalCovType = 'indep'
+    # available options are 'iid', 'indep' and 'adaptive'. For 'am',
+    # this will be used as the initial covariance.
+    proposalCovType = 'iid'
 
 # define model problem
 config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}
@@ -69,7 +69,7 @@ elif method == 'mrw':
 
     if proposalCovType == 'iid':
 
-        proposalMargVar = 0.005
+        proposalMargVar = 0.05
         proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
 
     elif proposalCovType == 'indep':
@@ -96,7 +96,7 @@ sampler = chainFactory.build_method()
 
 # run mcmc
 nSteps = 1000
-initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
+initState = setup.LotkaVolterraParameter.from_coefficient(np.array([-7., 2.8]))
 sampler.run(nSteps, initState)
 
 states = sampler.chain.trajectory
