@@ -3,23 +3,7 @@ from numpy.random import uniform
 from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.chain.interface import ProposalMethodInterface
 from yagremcmc.chain.chain import Chain
-
-
-class ChainDiagnostics:
-
-    def __init__(self, chain) -> None:
-
-        self.nAccept_ = 0
-        self.chain_ = chain
-
-    def add_accepted(self):
-
-        self.nAccept_ += 1
-
-    def acceptance_rate(self):
-
-        # initial state does not count as accepted
-        return self.nAccept_ / (len(self.chain_.trajectory) - 1)
+from yagremcmc.chain.diagnostics import ChainDiagnostics
 
 
 class MetropolisHastings(ABC):
@@ -62,6 +46,7 @@ class MetropolisHastings(ABC):
             return proposal
 
         else:
+            self.diagnostics_.add_rejected()
             return state
 
     # TODO: switch to Python logging for verbosity

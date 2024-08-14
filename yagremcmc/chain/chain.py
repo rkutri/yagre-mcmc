@@ -14,3 +14,6 @@ class Chain:
     def append(self, stateVector):
 
         self.stateVectors_.append(stateVector)
+
+
+# Thought for MLDA: Implement a hierarchical chain?

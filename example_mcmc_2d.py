@@ -50,7 +50,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 print("true mean: " + str(tgtMean.coefficient))
 print("mean state: " + str(meanState))
 print("mean estimate: " + str(meanEst))
-print("acceptance rate: " + str(mcmc.diagnostics.acceptance_rate()))
+print("acceptance rate: " + str(mcmc.diagnostics.global_acceptance_rate()))
 
 # plotting
 xGrid = np.linspace(-8., 8., 200)
