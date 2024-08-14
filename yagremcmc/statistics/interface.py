@@ -11,8 +11,23 @@ class DensityInterface(ABC):
 
 class CovarianceOperatorInterface(ABC):
 
+    @property
     @abstractmethod
-    def apply_sqrt(self, x):
+    def dimension(self):
+        pass
+
+    @property
+    @abstractmethod
+    def scaling(self):
+        pass
+
+    @scaling.setter
+    @abstractmethod
+    def scaling(self, value):
+        pass
+
+    @abstractmethod
+    def apply_chol_factor(self, x):
         pass
 
     @abstractmethod

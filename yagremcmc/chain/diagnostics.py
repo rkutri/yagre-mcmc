@@ -9,7 +9,7 @@ class ChainDiagnostics:
 
     def add_accepted(self):
         self.decisions_.append(1)
-    
+
     def add_rejected(self):
         self.decisions_.append(0)
 
@@ -18,4 +18,3 @@ class ChainDiagnostics:
 
     def global_acceptance_rate(self):
         return average(array(self.decisions_))
-

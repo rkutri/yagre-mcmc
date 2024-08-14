@@ -16,12 +16,25 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
     def __init__(self, marginalVariances):
 
         self.precision_ = reciprocal(marginalVariances)
+        self.scaling_ = 1.
 
-    def apply_sqrt(self, x):
-        return sqrt(reciprocal(self.precision_)) * x
+    @property
+    def dimension(self):
+        return self.precision_.size
+
+    @property
+    def scaling(self):
+        return self.scaling_
+
+    @scaling.setter
+    def scaling(self, value):
+        self.scaling_ = value
+
+    def apply_chol_factor(self, x):
+        return sqrt(self.scaling_ * reciprocal(self.precision_)) * x
 
     def apply_inverse(self, x):
-        return self.precision_ * x
+        return self.precision_ * x / self.scaling_
 
 
 class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
@@ -35,5 +48,5 @@ class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
         super().__init__(margVar)
 
 
-class AdaptiveCovariance(CovarianceOperatorInterface):
+class DenseCovarianceMatrix(CovarianceOperatorInterface):
     pass

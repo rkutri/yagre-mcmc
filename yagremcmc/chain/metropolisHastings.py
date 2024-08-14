@@ -64,7 +64,8 @@ class MetropolisHastings(ABC):
                     if (n == 0):
                         print("Start Markov chain")
                     else:
-                        ra = self.diagnostics_.rolling_acceptance_rate(interval)
+                        ra = self.diagnostics_.rolling_acceptance_rate(
+                            interval)
                         print(str(n) + " steps computed")
                         print("  - rolling acceptance rate: " + str(ra))
 

@@ -50,6 +50,6 @@ class Gaussian(ParameterLaw):
     def generate_realisation(self) -> ParameterInterface:
 
         xi = standard_normal(self.mean_.dimension)
-        colouredXi = self.cov_.apply_sqrt(xi)
+        colouredXi = self.cov_.apply_chol_factor(xi)
 
         return self.paramType_(self.mean_.coefficient + colouredXi)
