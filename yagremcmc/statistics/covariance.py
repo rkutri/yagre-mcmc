@@ -1,4 +1,6 @@
-from numpy import sqrt, reciprocal, full
+import numpy as np
+
+from scipy.linalg import cholesky, solve_triangular
 from yagremcmc.statistics.interface import CovarianceOperatorInterface
 
 
@@ -15,7 +17,7 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
 
     def __init__(self, marginalVariances):
 
-        self.precision_ = reciprocal(marginalVariances)
+        self.precision_ = np.reciprocal(marginalVariances)
         self.scaling_ = 1.
 
     @property
@@ -31,7 +33,7 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
         self.scaling_ = value
 
     def apply_chol_factor(self, x):
-        return sqrt(self.scaling_ * reciprocal(self.precision_)) * x
+        return np.sqrt(self.scaling_ * np.reciprocal(self.precision_)) * x
 
     def apply_inverse(self, x):
         return self.precision_ * x / self.scaling_
@@ -44,9 +46,41 @@ class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
 
     def __init__(self, dimension, variance):
 
-        margVar = full(dimension, variance)
+        margVar = np.full(dimension, variance)
         super().__init__(margVar)
 
 
 class DenseCovarianceMatrix(CovarianceOperatorInterface):
-    pass
+
+    def __init(self, denseCovMat):
+
+        s = self.cov_.shape
+        assert s[0] == s[1]
+
+        self.dim_ = s[0]
+
+        self.cholFactor_ = cholesky(denseCovMat, lower=True)
+
+        self.scaling_ = 1.
+
+    @property
+    def dimension(self):
+        return self.dim_
+
+    @property
+    def scaling(self):
+        return self.scaling_
+
+    @scaling.setter
+    def scaling(self, value):
+        self.scaling_ = value
+
+    def apply_chol_factor(self, x):
+
+        return self.cholFactor_ @ x
+
+    def apply_inverse(self, x):
+
+        y = solve_triangular(self.cholFactor_, x, lower=True)
+
+        return solve_triangular(self.cholFactor_.T, y, lower=False)

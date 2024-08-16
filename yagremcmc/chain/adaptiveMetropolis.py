@@ -76,18 +76,29 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
         if self.chain_ is None:
             raise ValueError("Adaptive Proposal is not associated to a chain.")
 
-        if self.status_ == AdaptivityStatus.COLLECTION \
-                or self.status_ == AdaptivityStatus.ADAPTIVE:
+        if self.status_ == AdaptivityStatus.ADAPTIVE:
             self._update_covariance()
 
         return self.proposalLaw_.generate_realisation()
 
     def _update_covariance(self):
 
+        if self.lastChainLength_ == 0:
+
+            print("  - Start using adaptive covariance.")
+
+            self.adaptCov_.initialise(self.cSteps_, self.chain_)
+            self.lastChainLength_ = self.chain_.length
+
         if self.lastChainLength_ < self.chain_.length:
+
+            if self.chain_.length == self.bSteps_:
+                print("  - Start collecting samples for adaptive covariance.")
+
+            assert self.lastChainLength_ == self.chain_.length - 1
             self.adaptCov_.update(self.chain_[-1])
 
-        # force a copy
+        # force copy
         self.lastChainLength_ = int(self.chain_.length)
 
     def _determine_status(self):
