@@ -3,17 +3,21 @@ import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
+from yagremcmc.chain.adaptiveMetropolis import AMFactory
 from yagremcmc.parameter.vector import ParameterVector
 
+
+# current options are 'mrw', 'am'
+method = 'am'
 
 # current options are 'iid', 'indep'
 mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[1.2, -0.3],
-     [-0.3, 0.4]])
+    [[2.2, -0.4],
+     [-0.4, 0.2]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
@@ -29,7 +33,25 @@ elif (mcmcProposal == 'indep'):
 else:
     raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+assert method in ('mrw', 'am')
+if method == 'mrw':
+
+    chainFactory = MRWFactory()
+
+    chainFactory.explicitTarget = tgtDensity
+    chainFactory.proposalCovariance = proposalCov
+
+else:
+
+    chainFactory = AMFactory()
+    
+    chainFactory.explicitTarget = tgtDensity
+    chainFactory.idleSteps = 100
+    chainFactory.collectionSteps = 500
+    chainFactory.regularisationParameter = 1e-4
+    chainFactory.initialCovariance = proposalCov
+
+mcmc = chainFactory.build_method()
 
 nSteps = 20000
 initState = ParameterVector(np.array([-8., -7.]))

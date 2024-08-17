@@ -6,6 +6,18 @@ from yagremcmc.chain.chain import Chain
 from yagremcmc.chain.diagnostics import ChainDiagnostics
 
 
+class UnnormalisedPosterior(DensityInterface):
+
+    def __init__(self, model):
+
+        self.model_ = model
+
+    def evaluate_log(self, parameter):
+
+        return self.model_.log_likelihood(parameter) \
+            + self.model_.log_prior(parameter)
+
+
 class MetropolisHastings(ABC):
     """
     Template class for Metropolis-Hastings-type chains
@@ -23,7 +35,7 @@ class MetropolisHastings(ABC):
     @property
     def chain(self):
         return self.chain_
-
+    
     @property
     def diagnostics(self):
         return self.diagnostics_

@@ -7,17 +7,18 @@ from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
 from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
 from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
+from yagremcmc.chain.adaptiveMetropolis import AMFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
 # available options are 'mrw', 'pcn', 'am'
-method = 'mrw'
+method = 'am'
 
 if method != 'pcn':
 
-    # available options are 'iid', 'indep' and 'adaptive'. For 'am',
+    # available options are 'iid', 'indep'. For 'am',
     # this will be used as the initial covariance.
     proposalCovType = 'iid'
 
@@ -61,41 +62,51 @@ statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 if method == 'pcn':
 
     chainFactory = PCNFactory()
-    chainFactory.set_step_size(0.01)
+    chainFactory.stepSize = 0.01
 
-elif method == 'mrw':
-
-    chainFactory = MRWFactory()
+elif method in ['mrw', 'am']:
 
     if proposalCovType == 'iid':
 
-        proposalMargVar = 0.05
+        proposalMargVar = 0.1
         proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
 
     elif proposalCovType == 'indep':
 
-        proposalMargVar = np.array([0.002, 0.006])
+        proposalMargVar = np.array([0.02, 0.06])
         proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
-
-    elif proposalCovType == 'adaptive':
-
-        raise Exception("Adaptive Metropolis not yet implemented")
 
     else:
         raise ValueError(
             "Unknown Proposal covariance type: " + proposalCovType)
 
-    chainFactory.set_proposal_covariance(proposalCov)
+    if method == 'mrw':
+
+        chainFactory = MRWFactory()
+        chainFactory.proposalCovariance = proposalCov
+
+    elif method == 'am':
+
+        chainFactory = AMFactory()
+
+        chainFactory.idleSteps = 100
+        chainFactory.collectionSteps = 200
+        chainFactory.regularisationParameter = 1e-4
+        chainFactory.initialCovariance = proposalCov
+    
+    else:
+        raise ValueError("Unknown MCMC method: " + method)
+
 
 else:
     raise ValueError("Unknown MCMC method: " + method)
 
-chainFactory.set_bayes_model(statModel)
+chainFactory.bayesModel = statModel
 
 sampler = chainFactory.build_method()
 
 # run mcmc
-nSteps = 1000
+nSteps = 5000
 initState = setup.LotkaVolterraParameter.from_coefficient(np.array([-7., 2.8]))
 sampler.run(nSteps, initState)
 

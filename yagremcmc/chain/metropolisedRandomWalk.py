@@ -1,21 +1,8 @@
 from numpy import exp
 from yagremcmc.chain.interface import ProposalMethodInterface
-from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
 from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
-from yagremcmc.statistics.interface import DensityInterface
-
-
-class UnnormalisedPosterior(DensityInterface):
-
-    def __init__(self, model):
-
-        self.model_ = model
-
-    def evaluate_log(self, parameter):
-
-        return self.model_.log_likelihood(parameter) \
-            + self.model_.log_prior(parameter)
 
 
 class MRWProposal(ProposalMethodInterface):
@@ -70,15 +57,17 @@ class MRWFactory(ChainFactory):
         super().__init__()
         self.proposalCov_ = None
 
-    def set_proposal_covariance(self, covariance):
+    @property
+    def proposalCovariance(self):
+        return self.proposalCov_
 
-        # TODO: add checks to validate the covariance (e.g. s.p.d.)
+    @proposalCovariance.setter
+    def proposalCovariance(self, covariance):
         self.proposalCov_ = covariance
 
     def build_from_model(self) -> MetropolisHastings:
 
-        if self.proposalCov_ is None:
-            raise ValueError("Proposal Covariance not set for MRW")
+        self._validate_parameters()
 
         targetDensity = UnnormalisedPosterior(self.bayesModel_)
 
@@ -86,7 +75,11 @@ class MRWFactory(ChainFactory):
 
     def build_from_target(self) -> MetropolisHastings:
 
-        if self.proposalCov_ is None:
-            raise ValueError("Proposal Covariance not set for MRW")
+        self._validate_parameters()
 
         return MetropolisedRandomWalk(self.explicitTarget_, self.proposalCov_)
+
+    def _validate_parameters(self) -> None:
+
+        if self.proposalCov_ is None:
+            raise ValueError("Proposal Covariance not set for MRW")

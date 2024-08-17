@@ -52,9 +52,9 @@ class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
 
 class DenseCovarianceMatrix(CovarianceOperatorInterface):
 
-    def __init(self, denseCovMat):
+    def __init__(self, denseCovMat):
 
-        s = self.cov_.shape
+        s = denseCovMat.shape
         assert s[0] == s[1]
 
         self.dim_ = s[0]
@@ -84,3 +84,8 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
         y = solve_triangular(self.cholFactor_, x, lower=True)
 
         return solve_triangular(self.cholFactor_.T, y, lower=False)
+    
+    def dense(self):
+
+        return np.matmul(self.cholFactor_, self.cholFactor_.T)
+        

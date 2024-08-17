@@ -28,6 +28,9 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
     def scaling(self, value):
         self.scaling_ = value
 
+    def dense_covariance_matrix(self):
+        return self.cov_.dense()
+
     def initialise(self, nData, chain):
 
         data = chain.trajectory[-nData:]

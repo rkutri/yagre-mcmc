@@ -10,13 +10,23 @@ class ChainFactory(ABC):
         self.bayesModel_ = None
         self.explicitTarget_ = None
 
-    def set_bayes_model(self, model):
+    @property
+    def bayesModel(self):
+        return self.bayesModel_
+
+    @bayesModel.setter
+    def bayesModel(self, model):
         self.bayesModel_ = model
 
-    def set_explicit_target(self, density):
+    @property
+    def explicitTarget(self):
+        return self.explicitTarget_
+
+    @explicitTarget.setter
+    def explicitTarget(self, density):
         self.explicitTarget_ = density
 
-    def validate(self):
+    def validate_target_measure(self):
 
         if self.bayesModel_ is None and self.explicitTarget_ is None:
             raise ValueError("Either bayesian model or explicit target density"
@@ -28,15 +38,19 @@ class ChainFactory(ABC):
 
     def target_is_posterior(self):
 
-        self.validate()
+        self.validate_target_measure()
 
         return self.bayesModel_ is not None
 
     def target_is_explicit(self):
 
-        self.validate()
+        self.validate_target_measure()
 
         return self.explicitTarget_ is not None
+
+    @abstractmethod
+    def _validate_parameters(self) -> None:
+        pass
 
     @abstractmethod
     def build_from_model(self) -> MetropolisHastings:
@@ -46,9 +60,10 @@ class ChainFactory(ABC):
     def build_from_target(self) -> MetropolisHastings:
         pass
 
+
     def build_method(self):
 
-        self.validate()
+        self.validate_target_measure()
 
         if self.target_is_posterior():
             return self.build_from_model()
