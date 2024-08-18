@@ -89,11 +89,11 @@ elif method in ['mrw', 'am']:
 
         chainFactory = AMFactory()
 
-        chainFactory.idleSteps = 100
-        chainFactory.collectionSteps = 200
+        chainFactory.idleSteps = 200
+        chainFactory.collectionSteps = 400
         chainFactory.regularisationParameter = 1e-4
         chainFactory.initialCovariance = proposalCov
-    
+
     else:
         raise ValueError("Unknown MCMC method: " + method)
 
@@ -112,8 +112,8 @@ sampler.run(nSteps, initState)
 
 states = sampler.chain.trajectory
 
-burnIn = 100
-thinningStep = 3
+burnIn = 250
+thinningStep = 6
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter.from_coefficient(

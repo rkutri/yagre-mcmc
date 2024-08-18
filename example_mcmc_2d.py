@@ -44,7 +44,7 @@ if method == 'mrw':
 else:
 
     chainFactory = AMFactory()
-    
+
     chainFactory.explicitTarget = tgtDensity
     chainFactory.idleSteps = 100
     chainFactory.collectionSteps = 500
@@ -53,7 +53,7 @@ else:
 
 mcmc = chainFactory.build_method()
 
-nSteps = 20000
+nSteps = 50000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
@@ -61,7 +61,7 @@ states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
 burnin = int(0.01 * nSteps)
-thinningStep = 4
+thinningStep = 6
 
 mcmcSamples = states[burnin::thinningStep]
 

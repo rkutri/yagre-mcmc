@@ -35,7 +35,7 @@ class MetropolisHastings(ABC):
     @property
     def chain(self):
         return self.chain_
-    
+
     @property
     def diagnostics(self):
         return self.diagnostics_

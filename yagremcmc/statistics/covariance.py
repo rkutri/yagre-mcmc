@@ -84,8 +84,7 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
         y = solve_triangular(self.cholFactor_, x, lower=True)
 
         return solve_triangular(self.cholFactor_.T, y, lower=False)
-    
+
     def dense(self):
 
         return np.matmul(self.cholFactor_, self.cholFactor_.T)
-        

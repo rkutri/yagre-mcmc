@@ -13,6 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class AdaptivityStatus(Enum):
     NONE = -1
     IDLE = 0
@@ -20,6 +21,8 @@ class AdaptivityStatus(Enum):
     ADAPTIVE = 2
 
 # TODO: implement State pattern
+
+
 class AdaptiveMRWProposal(ProposalMethodInterface):
     """
     Adaptive Metropolis Random Walk Proposal Method.
@@ -69,10 +72,12 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
     def generate_proposal(self):
 
         if self.state_ is None or self.proposalLaw_ is None:
-            raise ValueError("Trying to generate proposal with undefined state.")
+            raise ValueError(
+                "Trying to generate proposal with undefined state.")
 
         if self.chain_ is None:
-            raise ValueError("Adaptive Proposal is not associated with a chain.")
+            raise ValueError(
+                "Adaptive Proposal is not associated with a chain.")
 
         if self.status_ == AdaptivityStatus.ADAPTIVE:
             self._update_covariance()
@@ -84,7 +89,8 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
         if self.status_ == AdaptivityStatus.ADAPTIVE:
             if self.lastChainLength_ == 0:
 
-                logger.info(f"Initialising adaptive covariance at {self.chain_.length} iterations.")
+                logger.info(
+                    f"Initialising adaptive covariance at {self.chain_.length} iterations.")
                 self.adaptCov_.initialise(self.collectionSteps_, self.chain_)
 
             elif self.lastChainLength_ < self.chain_.length:
@@ -111,9 +117,11 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
         elif self.idleSteps_ <= chain_length < self.idleSteps_ + self.collectionSteps_:
             self.status_ = AdaptivityStatus.COLLECTION
             if self.lastChainLength_ == self.idleSteps_:
-                logger.info(f"Start collecting samples for adaptive covariance at {chain_length} iterations.")
+                logger.info(
+                    f"Start collecting samples for adaptive covariance at {chain_length} iterations.")
         else:
             self.status_ = AdaptivityStatus.ADAPTIVE
+
 
 class AdaptiveMetropolis(MetropolisHastings):
     """
@@ -129,7 +137,8 @@ class AdaptiveMetropolis(MetropolisHastings):
 
     def __init__(self, targetDensity, initCov, idleSteps, collectionSteps, regParam):
 
-        proposalMethod = AdaptiveMRWProposal(initCov, idleSteps, collectionSteps, regParam)
+        proposalMethod = AdaptiveMRWProposal(
+            initCov, idleSteps, collectionSteps, regParam)
         super().__init__(targetDensity, proposalMethod)
         self.proposalMethod_.chain = self.chain_
 
@@ -137,6 +146,7 @@ class AdaptiveMetropolis(MetropolisHastings):
         densityRatio = exp(self.targetDensity_.evaluate_log(proposal)
                            - self.targetDensity_.evaluate_log(state))
         return min(densityRatio, 1.)
+
 
 class AMFactory(ChainFactory):
     """
@@ -181,7 +191,7 @@ class AMFactory(ChainFactory):
         if eps < 0:
             raise ValueError("Regularisation parameter must be non-negative.")
         self.regularisationParameter_ = eps
-    
+
     @property
     def initialCovariance(self):
         return self.initialCovariance_

@@ -13,15 +13,15 @@ def test_MRWFactory():
 
     # MRWFactory setup
     chainFactory = MRWFactory()
-    chainFactory.set_proposal_covariance(mockProposalCov)
-    chainFactory.set_bayes_model(mockPosterior)
+    chainFactory.proposalCovariance = mockProposalCov
+    chainFactory.bayesModel = mockPosterior
 
     # Mock the MetropolisedRandomWalk construction
     with pytest.raises(ValueError, match="Proposal Covariance not set for MRW"):
-        chainFactory.set_proposal_covariance(None)
+        chainFactory.proposalCovariance = None
         chainFactory.build_method()
 
-    chainFactory.set_proposal_covariance(mockProposalCov)
+    chainFactory.proposalCovariance = mockProposalCov
     chainFactory.build_from_model = Mock(return_value=mockChain)
 
     # Build chain
@@ -41,9 +41,8 @@ def test_PCNFactory():
 
     # PCNFactory setup
     chainFactory = PCNFactory()
-    chainFactory.set_step_size(0.01)
-    chainFactory.set_bayes_model(
-        Mock(likelihood=mockLikelihood, prior=mockPrior))
+    chainFactory.stepSize = 0.01
+    chainFactory.bayesModel = Mock(likelihood=mockLikelihood, prior=mockPrior)
 
     # Mock the PreconditionedCrankNicolson construction
     chainFactory.build_from_model = Mock(return_value=mockChain)
@@ -60,10 +59,10 @@ def test_PCNFactory_error():
 
     # Initialize PCNFactory with a mock
     chainFactory = PCNFactory()
-    chainFactory.set_step_size(0.01)
+    chainFactory.stepSize = 0.01
 
     # Set an explicit target (not allowed for PCNFactory)
-    chainFactory.set_explicit_target(Mock())
+    chainFactory.explicitTarget = Mock()
 
     # Ensure RuntimeError is raised
     with pytest.raises(RuntimeError):

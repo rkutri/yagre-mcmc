@@ -83,8 +83,8 @@ def test_mrw(mcmcProposal):
     else:
         raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-    chainFactory.set_proposal_covariance(proposalCov)
-    chainFactory.set_bayes_model(statModel)
+    chainFactory.proposalCovariance = proposalCov
+    chainFactory.bayesModel = statModel
 
     mcmc = chainFactory.build_method()
 
@@ -113,8 +113,8 @@ def test_pcn():
     seed(17)
 
     chainFactory = PCNFactory()
-    chainFactory.set_step_size(0.001)
-    chainFactory.set_bayes_model(statModel)
+    chainFactory.stepSize = 0.001
+    chainFactory.bayesModel = statModel
 
     mcmc = chainFactory.build_method()
 

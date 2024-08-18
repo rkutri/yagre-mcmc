@@ -90,6 +90,6 @@ class PCNFactory(ChainFactory):
             "PCN is only defined in relation to a Bayesian model")
 
     def _validate_parameters(self) -> None:
-        
+
         if self.stepSize_ is None:
             raise ValueError("Step size not set in PCN.")
