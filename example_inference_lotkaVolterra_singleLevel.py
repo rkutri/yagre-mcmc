@@ -5,18 +5,22 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
-from yagremcmc.inference.parameterLaw import Gaussian
-from yagremcmc.inference.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
-from yagremcmc.inference.noise import CentredGaussianIIDNoise
-from yagremcmc.inference.bayesModel import BayesianRegressionModel
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
+from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
+from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
+from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
-# current options are 'iid', 'indep'
-mcmcProposal = 'iid'
+# available options are 'mrw', 'pcn', 'am'
+method = 'am'
 
-# current options are 'mrw', 'pcn'
-mcmcMethod = 'pcn'
+if method != 'pcn':
+
+    # available options are 'iid', 'indep'. For 'am',
+    # this will be used as the initial covariance.
+    proposalCovType = 'iid'
 
 # define model problem
 config = {'T': 10., 'alpha': 0.8, 'gamma': 0.4, 'nData': 10, 'dataDim': 2}
@@ -41,18 +45,8 @@ print("synthetic data generated")
 # start with a prior centred around the true parameter coefficient
 priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
 
-if (mcmcProposal == 'iid'):
-
-    priorMargVar = 0.02
-    priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
-
-elif (mcmcProposal == 'indep'):
-
-    priorMargVar = np.array([0.02, 0.01])
-    priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
-
-else:
-    raise Exception("prior covariance " + mcmcProposal + " not implemented")
+priorMargVar = 1.2
+priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
 
 # set up prior
 prior = Gaussian(priorMean, priorCovariance)
@@ -64,40 +58,62 @@ noiseModel = CentredGaussianIIDNoise(noiseVariance)
 # define the statistical inverse problem
 statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 
-if (mcmcMethod == 'mrw'):
+# configure the chain setup
+if method == 'pcn':
 
-    if (mcmcProposal == 'iid'):
+    chainFactory = PCNFactory()
+    chainFactory.stepSize = 0.01
 
-        proposalMargVar = 0.02
+elif method in ['mrw', 'am']:
+
+    if proposalCovType == 'iid':
+
+        proposalMargVar = 0.1
         proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
 
-    elif (mcmcProposal == 'indep'):
+    elif proposalCovType == 'indep':
 
-        proposalMargVar = np.array([0.02, 0.01])
+        proposalMargVar = np.array([0.02, 0.06])
         proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
 
     else:
-        raise Exception("Proposal " + mcmcProposal + " not implemented")
+        raise ValueError(
+            "Unknown Proposal covariance type: " + proposalCovType)
 
-    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
+    if method == 'mrw':
 
-elif (mcmcMethod == 'pcn'):
+        chainFactory = MRWFactory()
+        chainFactory.proposalCovariance = proposalCov
 
-    stepSize = 0.02
-    mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
+    elif method == 'am':
+
+        chainFactory = AMFactory()
+
+        chainFactory.idleSteps = 200
+        chainFactory.collectionSteps = 400
+        chainFactory.regularisationParameter = 1e-4
+        chainFactory.initialCovariance = proposalCov
+
+    else:
+        raise ValueError("Unknown MCMC method: " + method)
+
 
 else:
-    raise Exception("Unknown MCMC method: " + str(mcmcMethod))
+    raise ValueError("Unknown MCMC method: " + method)
+
+chainFactory.bayesModel = statModel
+
+sampler = chainFactory.build_method()
 
 # run mcmc
-nSteps = 1000
-initState = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-mcmc.run(nSteps, initState)
+nSteps = 5000
+initState = setup.LotkaVolterraParameter.from_coefficient(np.array([-7., 2.8]))
+sampler.run(nSteps, initState)
 
-states = mcmc.chain
+states = sampler.chain.trajectory
 
-burnIn = 100
-thinningStep = 3
+burnIn = 250
+thinningStep = 6
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter.from_coefficient(
@@ -109,6 +125,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print("true parameter: " + str(groundTruth.evaluate()))
 print("raw posterior mean: " + str(meanState.evaluate()))
 print("processed posterior mean: " + str(posteriorMean.evaluate()))
+print("Acceptance rate: " + str(sampler.diagnostics.global_acceptance_rate()))
 
 # Plotting
 fig, ax = plt.subplots(1, 2)

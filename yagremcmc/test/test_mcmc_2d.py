@@ -3,8 +3,8 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
-from yagremcmc.inference.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
+from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.vector import ParameterVector
 
 
@@ -42,7 +42,7 @@ def test_moments(mcmcProposal):
     initState = ParameterVector.from_coefficient(np.array([-2., 0.]))
     mcmc.run(nSteps, initState, verbose=False)
 
-    states = np.array(mcmc.chain)
+    states = np.array(mcmc.chain.trajectory)
 
     # Postprocessing
     burnin = 200

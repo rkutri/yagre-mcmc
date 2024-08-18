@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from numpy import sqrt, dot, reciprocal, full
 from numpy.random import standard_normal, uniform
-from yagremcmc.inference.interface import DensityInterface, CovarianceOperatorInterface
+from yagremcmc.statistics.interface import DensityInterface, CovarianceOperatorInterface
 from yagremcmc.parameter.interface import ParameterInterface
 
 
@@ -36,6 +36,10 @@ class Gaussian(ParameterLaw):
     def mean(self):
         return self.mean_
 
+    @property
+    def covariance(self):
+        return self.cov_
+
     def evaluate_log(self, state: ParameterInterface) -> float:
 
         x = state.coefficient - self.mean_.coefficient
@@ -46,6 +50,6 @@ class Gaussian(ParameterLaw):
     def generate_realisation(self) -> ParameterInterface:
 
         xi = standard_normal(self.mean_.dimension)
-        colouredXi = self.cov_.apply_sqrt(xi)
+        colouredXi = self.cov_.apply_chol_factor(xi)
 
         return self.paramType_(self.mean_.coefficient + colouredXi)

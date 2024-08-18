@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import yagremcmc.test.testSetup as ts
 
-from yagremcmc.inference.data import Data
+from yagremcmc.statistics.data import Data
 from yagremcmc.model.forwardModel import EvaluationStatus
 
 # Sample configuration

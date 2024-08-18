@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
-from yagremcmc.inference.covariance import IIDCovarianceMatrix
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix
+from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
 from yagremcmc.parameter.scalar import ScalarParameter
 
 
@@ -23,13 +23,13 @@ mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
 nSteps = 50000
 initState = ScalarParameter(np.array([-3.]))
-mcmc.run(nSteps, initState, verbose=False)
+mcmc.run(nSteps, initState)
 
-states = np.array(mcmc.chain)
+states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
 burnin = int(0.02 * nSteps)
-thinningStep = 5
+thinningStep = 2
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -40,6 +40,7 @@ meanState = np.mean(states)
 print("true mean: " + str(tgtMean.coefficient[0]))
 print("best estimate: " + str(meanSample))
 print("unprocessed estimate: " + str(meanState))
+print("acceptance rate: " + str(mcmc.diagnostics.global_acceptance_rate()))
 
 plt.hist(states, bins=50, edgecolor='white', alpha=0.4,
          color='red', density=True, label='mc states')

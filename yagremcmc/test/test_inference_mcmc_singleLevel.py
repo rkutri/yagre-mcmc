@@ -4,12 +4,12 @@ import yagremcmc.test.testSetup as setup
 import numpy as np
 
 from numpy.random import seed
-from yagremcmc.inference.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.inference.parameterLaw import Gaussian
-from yagremcmc.inference.noise import CentredGaussianIIDNoise
-from yagremcmc.inference.bayesModel import BayesianRegressionModel
-from yagremcmc.inference.metropolisedRandomWalk import MetropolisedRandomWalk
-from yagremcmc.inference.preconditionedCrankNicolson import PreconditionedCrankNicolson
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
+from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.bayesModel import BayesianRegressionModel
+from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
+from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
 from yagremcmc.model.forwardModel import ForwardModel
 
 
@@ -46,38 +46,29 @@ assert parameterDim == groundTruth.dimension
 dataNoiseVariance = 0.05
 data = setup.generate_synthetic_data(groundTruth, solver, dataNoiseVariance)
 
+# start with a prior centred around the true parameter coefficient
+priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
+
+priorMargVar = 0.02
+priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
+
+# set up prior
+prior = Gaussian(priorMean, priorCovariance)
+
+# define a noise model
+noiseVariance = dataNoiseVariance
+noiseModel = CentredGaussianIIDNoise(noiseVariance)
+
+# define the statistical inverse problem
+statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
+
 
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
 def test_mrw(mcmcProposal):
 
     seed(16)
 
-    # start with a prior centred around the true parameter coefficient
-    priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
-
-    if (mcmcProposal == 'iid'):
-
-        priorMargVar = 0.02
-        priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
-
-    elif (mcmcProposal == 'indep'):
-
-        priorMargVar = np.array([0.02, 0.01])
-        priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
-
-    else:
-        raise Exception("prior covariance " +
-                        mcmcProposal + " not implemented")
-
-    # set up prior
-    prior = Gaussian(priorMean, priorCovariance)
-
-    # define a noise model
-    noiseVariance = dataNoiseVariance
-    noiseModel = CentredGaussianIIDNoise(noiseVariance)
-
-    # define the statistical inverse problem
-    statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
+    chainFactory = MRWFactory()
 
     if (mcmcProposal == 'iid'):
 
@@ -92,7 +83,10 @@ def test_mrw(mcmcProposal):
     else:
         raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-    mcmc = MetropolisedRandomWalk.from_bayes_model(statModel, proposalCov)
+    chainFactory.proposalCovariance = proposalCov
+    chainFactory.bayesModel = statModel
+
+    mcmc = chainFactory.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -100,7 +94,7 @@ def test_mrw(mcmcProposal):
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.chain
+    states = mcmc.chain.trajectory
 
     burnIn = 200
     thinningStep = 5
@@ -114,40 +108,15 @@ def test_mrw(mcmcProposal):
     check_mean([meanState, posteriorMean], groundTruth)
 
 
-@pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
-def test_pcn(mcmcProposal):
+def test_pcn():
 
     seed(17)
 
-    # start with a prior centred around the true parameter coefficient
-    priorMean = setup.LotkaVolterraParameter.from_coefficient(np.zeros(2))
+    chainFactory = PCNFactory()
+    chainFactory.stepSize = 0.001
+    chainFactory.bayesModel = statModel
 
-    if (mcmcProposal == 'iid'):
-
-        priorMargVar = 0.02
-        priorCovariance = IIDCovarianceMatrix(parameterDim, priorMargVar)
-
-    elif (mcmcProposal == 'indep'):
-
-        priorMargVar = np.array([0.02, 0.01])
-        priorCovariance = DiagonalCovarianceMatrix(priorMargVar)
-
-    else:
-        raise Exception("prior covariance " +
-                        mcmcProposal + " not implemented")
-
-    # set up prior
-    prior = Gaussian(priorMean, priorCovariance)
-
-    # define a noise model
-    noiseVariance = dataNoiseVariance
-    noiseModel = CentredGaussianIIDNoise(noiseVariance)
-
-    # define the statistical inverse problem
-    statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
-
-    stepSize = 0.001
-    mcmc = PreconditionedCrankNicolson.from_bayes_model(statModel, stepSize)
+    mcmc = chainFactory.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -155,7 +124,7 @@ def test_pcn(mcmcProposal):
         np.array([-0.6, -0.3]))
     mcmc.run(nSteps, initState)
 
-    states = mcmc.chain
+    states = mcmc.chain.trajectory
 
     burnIn = 200
     thinningStep = 5
