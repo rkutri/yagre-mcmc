@@ -25,3 +25,11 @@ class ParameterInterface(ABC):
     @abstractmethod
     def __eq__(self, other):
         pass
+
+    @abstractmethod
+    def __copy__(self):
+        pass
+
+    @abstractmethod
+    def __deepcopy__(self, memo=None):
+        pass
