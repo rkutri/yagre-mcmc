@@ -1,52 +1,32 @@
-import logging
+import numpy as np
 
-from numpy import exp
-from enum import Enum
 from yagremcmc.chain.interface import ProposalMethodInterface
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
+from yagremcmc.chain.metropolisedRandomWalk import MRWProposal
 from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
 from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 
-import logging
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
-
-class AdaptivityStatus(Enum):
-    NONE = -1
-    IDLE = 0
-    COLLECTION = 1
-    ADAPTIVE = 2
-
-# TODO: implement State pattern
-
-
-class AdaptiveMRWProposal(ProposalMethodInterface):
+class AMAdaptive(ProposalMethodInterface):
     """
-    Adaptive Metropolis Random Walk Proposal Method.
-
-    Parameters:
-    - initCov: Initial covariance matrix to be used during the IDLE and COLLECTION phases.
-    - idleSteps: Number of steps during which the covariance is not updated (IDLE phase).
-    - collectionSteps: Number of steps where samples are collected but the covariance is not updated (COLLECTION phase).
-    - regParam: Regularization parameter used for adaptive covariance calculation.
+    Adaptive Proposals
     """
 
-    def __init__(self, initCov, idleSteps, collectionSteps, regParam):
+    def __init__(self, chain, eps, cSteps):
 
-        if initCov.dimension == 1:
-            raise NotImplementedError("AM not implemented for scalar chains.")
+        self.chain_ = chain
 
-        self.initCov_ = initCov
-        self.adaptCov_ = AdaptiveCovarianceMatrix(initCov.dimension, regParam)
-        self.idleSteps_ = idleSteps
-        self.collectionSteps_ = collectionSteps
-        self.status_ = AdaptivityStatus.IDLE
-        self.lastChainLength_ = 0
+        initData = self.chain_.trajectory[-cSteps:]
 
-        self.chain_ = None
+        nData = len(initData)
+        self.offset_ = chain.length - cSteps
+
+        mean = np.mean(initData, axis=0)
+        sampCov = np.cov(np.vstack(initData), rowvar=False, bias=False)
+
+        self.cov_ = AdaptiveCovarianceMatrix(mean, sampCov, eps, nData)
+
         self.state_ = None
         self.proposalLaw_ = None
 
@@ -58,8 +38,59 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
     def state(self, newState):
 
         self.state_ = newState
-        self._determine_status()
-        self._update_proposal_law()
+        self.proposalLaw_ = Gaussian(self.state_, self.cov_)
+
+    def generate_proposal(self):
+
+        self._update_covariance()
+
+        return self.proposalLaw_.generate_realisation()
+
+    def _update_covariance(self):
+
+        if self.cov_.nData == self.chain_.length:
+            return
+
+        if self.chain_.length - self.offset_ - self.cov_.nData > 1:
+
+            raise RuntimeError("adaptive covariance is lagging behind more than"
+                               " two states.")
+
+        self.cov_.update(self.chain_.trajectory[-1])
+
+
+class AdaptiveMRWProposal(ProposalMethodInterface):
+    """
+    Adaptive Metropolis Random Walk Proposal Method.
+    """
+
+    def __init__(self, initCov, idleSteps, collectionSteps, regParam):
+        """
+        Parameters:
+        - initCov: Initial covariance matrix to be used during the IDLE and COLLECTION phases.
+        - idleSteps: Number of steps during which the covariance is not updated (IDLE phase).
+        - collectionSteps: Number of steps where samples are collected but the covariance is not updated (COLLECTION phase).
+        - regParam: Regularization parameter used for adaptive covariance calculation.
+        """
+
+        if initCov.dimension == 1:
+            raise NotImplementedError("AM not implemented for scalar chains.")
+
+        self.proposalMethod_ = MRWProposal(initCov)
+
+        self.iSteps_ = idleSteps
+        self.cSteps_ = collectionSteps
+        self.eps_ = regParam
+
+        self.chain_ = None
+
+    @property
+    def state(self):
+        return self.proposalMethod_.state
+
+    @state.setter
+    def state(self, newState):
+        self.proposalMethod_.state = newState
 
     @property
     def chain(self):
@@ -69,56 +100,34 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
     def chain(self, newChain):
         self.chain_ = newChain
 
-    def generate_proposal(self):
+    def _determine_proposal_method(self):
 
-        if self.state_ is None or self.proposalLaw_ is None:
-            raise ValueError(
-                "Trying to generate proposal with undefined state.")
+        if self.chain_.length < self.iSteps_ + self.cSteps_:
+            assert isinstance(self.proposalMethod_, MRWProposal)
+
+        elif self.chain_.length == self.iSteps_ + self.cSteps_:
+
+            currentState = self.proposalMethod_.state
+
+            self.proposalMethod_ = AMAdaptive(
+                self.chain_, self.eps_, self.cSteps_)
+            self.proposalMethod_.state = currentState
+
+        elif self.chain_.length > self.iSteps_ + self.cSteps_:
+            assert isinstance(self.proposalMethod_, AMAdaptive)
+
+        else:
+            raise RuntimeError("Undefined adaptive Metropolis chain state.")
+
+    def generate_proposal(self):
 
         if self.chain_ is None:
             raise ValueError(
-                "Adaptive Proposal is not associated with a chain.")
+                "Adaptive Proposal is not associated with a chain yet.")
 
-        return self.proposalLaw_.generate_realisation()
+        self._determine_proposal_method()
 
-    def _update_covariance(self):
-
-        if self.status_ == AdaptivityStatus.ADAPTIVE:
-            if self.lastChainLength_ == 0:
-
-                logger.info(
-                    f"Initialising adaptive covariance at {self.chain_.length} iterations.")
-                self.adaptCov_.initialise(self.collectionSteps_, self.chain_)
-
-            elif self.lastChainLength_ < self.chain_.length:
-
-                assert self.lastChainLength_ == self.chain_.length - 1
-                self.adaptCov_.update(self.chain_.trajectory[-1])
-
-            self.lastChainLength_ = self.chain_.length
-
-    def _update_proposal_law(self):
-
-        if self.status_ in (AdaptivityStatus.IDLE, AdaptivityStatus.COLLECTION):
-            self.proposalLaw_ = Gaussian(self.state_, self.initCov_)
-        elif self.status_ == AdaptivityStatus.ADAPTIVE:
-            self._update_covariance()
-            self.proposalLaw_ = Gaussian(self.state_, self.adaptCov_)
-        else:
-            raise ValueError("Invalid status when setting state.")
-
-    def _determine_status(self):
-
-        chain_length = self.chain_.length
-        if chain_length < self.idleSteps_:
-            self.status_ = AdaptivityStatus.IDLE
-        elif self.idleSteps_ <= chain_length < self.idleSteps_ + self.collectionSteps_:
-            self.status_ = AdaptivityStatus.COLLECTION
-            if self.lastChainLength_ == self.idleSteps_:
-                logger.info(
-                    f"Start collecting samples for adaptive covariance at {chain_length} iterations.")
-        else:
-            self.status_ = AdaptivityStatus.ADAPTIVE
+        return self.proposalMethod_.generate_proposal()
 
 
 class AdaptiveMetropolis(MetropolisHastings):
@@ -141,8 +150,8 @@ class AdaptiveMetropolis(MetropolisHastings):
         self.proposalMethod_.chain = self.chain_
 
     def _acceptance_probability(self, proposal, state):
-        densityRatio = exp(self.targetDensity_.evaluate_log(proposal)
-                           - self.targetDensity_.evaluate_log(state))
+        densityRatio = np.exp(self.targetDensity_.evaluate_log(proposal)
+                              - self.targetDensity_.evaluate_log(state))
         return min(densityRatio, 1.)
 
 

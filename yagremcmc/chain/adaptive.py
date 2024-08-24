@@ -6,15 +6,18 @@ from yagremcmc.statistics.covariance import DenseCovarianceMatrix
 
 class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
 
-    def __init__(self, dimension, regularisationParameter):
+    def __init__(self, initMean, initSampCov, eps, nData):
 
-        self.dim_ = dimension
-        self.eps_ = regularisationParameter
+        self.mean_ = initMean
+        self.eps_ = eps
+        self.nData_ = nData
+
+        self.dim_ = initMean.size
         self.scaling_ = 1.
-        self.nData_ = 0
 
-        self.mean_ = None
-        self.cov_ = None
+        regCov = self._dimension_scaling() \
+            * ((1. - eps) * initSampCov + eps * np.eye(self.dim_))
+        self.cov_ = DenseCovarianceMatrix(regCov)
 
     @property
     def dimension(self):
@@ -28,30 +31,14 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
     def scaling(self, value):
         self.scaling_ = value
 
+    @property
+    def nData(self):
+        return self.nData_
+
     def dense_covariance_matrix(self):
         return self.cov_.dense()
 
-    def initialise(self, nData, chain):
-
-        data = chain.trajectory[-nData:]
-
-        self.mean_ = np.mean(data)
-        sampCov = np.cov(np.vstack(data), rowvar=False, bias=False)
-
-        adaptCov = self._dimension_scaling() * (1. - self.eps_) * sampCov
-        for i in range(self.dim_):
-            adaptCov[i, i] += self.eps_
-
-        self.cov_ = DenseCovarianceMatrix(adaptCov)
-        self.cov_.scaling = self.scaling_
-
-        self.nData_ = nData
-
     def update(self, vector):
-
-        if self.mean_ is None or self.cov_ is None:
-            raise ValueError(
-                "Calling update before covariance is initialised.")
 
         n = self.nData_
         nPlus = self.nData_ + 1
@@ -63,8 +50,8 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
             + self._dimension_scaling() / n \
             * (n * np.outer(self.mean_, self.mean_)
                - nPlus * np.outer(newMean, newMean)
-               + np.outer(vector, vector)) \
-            + self.eps_ * self._dimension_scaling() / n * np.eye(self.dim_)
+               + np.outer(vector, vector)
+               + self.eps_ * np.eye(self.dim_))
 
         self.nData_ = nPlus
         self.mean_ = newMean

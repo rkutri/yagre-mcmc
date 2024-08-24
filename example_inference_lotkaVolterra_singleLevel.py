@@ -112,7 +112,7 @@ sampler.run(nSteps, initState)
 
 states = sampler.chain.trajectory
 
-burnIn = 50
+burnIn = 100
 thinningStep = 6
 
 mcmcSamples = states[burnIn::thinningStep]
