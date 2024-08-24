@@ -13,7 +13,8 @@ class BayesianRegressionLikelihood(DensityInterface):
         self.noiseModel_ = noiseModel
 
         # by default, only state and proposal likelihoods are required
-        self.llCache_ = EvaluationCache(2)
+        cacheSize = 4
+        self.llCache_ = EvaluationCache(cacheSize)
 
     def evaluate_log(self, parameter):
         """
