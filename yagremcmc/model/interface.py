@@ -1,4 +1,4 @@
-from abc import ABC, abstractproperty, abstractmethod
+from abc import ABC, abstractmethod
 
 
 class SolverInterface(ABC):

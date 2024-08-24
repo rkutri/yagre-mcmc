@@ -68,7 +68,7 @@ elif method in ['mrw', 'am']:
 
     if proposalCovType == 'iid':
 
-        proposalMargVar = 0.1
+        proposalMargVar = 0.2
         proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
 
     elif proposalCovType == 'indep':
@@ -89,9 +89,9 @@ elif method in ['mrw', 'am']:
 
         chainFactory = AMFactory()
 
-        chainFactory.idleSteps = 200
-        chainFactory.collectionSteps = 400
-        chainFactory.regularisationParameter = 1e-4
+        chainFactory.idleSteps = 50
+        chainFactory.collectionSteps = 100
+        chainFactory.regularisationParameter = 1e-6
         chainFactory.initialCovariance = proposalCov
 
     else:
@@ -112,7 +112,7 @@ sampler.run(nSteps, initState)
 
 states = sampler.chain.trajectory
 
-burnIn = 250
+burnIn = 100
 thinningStep = 6
 
 mcmcSamples = states[burnIn::thinningStep]
@@ -166,6 +166,11 @@ ax[0].scatter(
     marker='P',
     label='true parameter',
     s=120)
+
+if method == 'am':
+    adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
+    ax[0].scatter(chainX[adaptStart], chainY[adaptStart], color='green',
+                  marker='x', s=100, label='start of adaptive covariance')
 
 ax[0].set_title('2D Markov Chain Path')
 ax[0].set_xlabel('X')
