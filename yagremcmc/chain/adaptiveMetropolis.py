@@ -79,9 +79,6 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
             raise ValueError(
                 "Adaptive Proposal is not associated with a chain.")
 
-        if self.status_ == AdaptivityStatus.ADAPTIVE:
-            self._update_covariance()
-
         return self.proposalLaw_.generate_realisation()
 
     def _update_covariance(self):
@@ -105,6 +102,7 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
         if self.status_ in (AdaptivityStatus.IDLE, AdaptivityStatus.COLLECTION):
             self.proposalLaw_ = Gaussian(self.state_, self.initCov_)
         elif self.status_ == AdaptivityStatus.ADAPTIVE:
+            self._update_covariance()
             self.proposalLaw_ = Gaussian(self.state_, self.adaptCov_)
         else:
             raise ValueError("Invalid status when setting state.")

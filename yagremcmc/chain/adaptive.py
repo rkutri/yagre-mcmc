@@ -56,20 +56,19 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
         n = self.nData_
         nPlus = self.nData_ + 1
         nMinus = self.nData_ - 1
-        sd = self._dimension_scaling()
 
         newMean = (self.nData_ * self.mean_ + vector) / nPlus
 
-        upd1 = (nMinus / n) * self.cov_.dense()
-        upd2 = (1. - self.eps_) * sd / n \
-            * (n * np.outer(self.mean_, self.mean_)
-               - nPlus * np.outer(newMean, newMean)
-               + np.outer(vector, vector))
-        upd3 = self.eps_ * sd / n * np.eye(self.dim_)
+        updCov = (nMinus / n) * self.cov_.dense() \
+            + self._dimension_scaling() / n \
+                * (n * np.outer(self.mean_, self.mean_)
+                    - nPlus * np.outer(newMean, newMean)
+                    + np.outer(vector, vector)) \
+            + self.eps_ * self._dimension_scaling() / n * np.eye(self.dim_)
 
         self.nData_ = nPlus
         self.mean_ = newMean
-        self.cov_ = DenseCovarianceMatrix(upd1 + upd2 + upd3)
+        self.cov_ = DenseCovarianceMatrix(updCov)
 
         self.cov_.scaling = self.scaling_
 
@@ -80,4 +79,4 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
         return self.cov_.apply_inverse(x)
 
     def _dimension_scaling(self):
-        return 2.4*2.4 / self.dim_
+        return 4. / self.dim_

@@ -16,13 +16,13 @@ mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[2.2, -0.4],
-     [-0.4, 0.2]])
+    [[2.2, -0.5],
+     [-0.5, 0.3]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
 
-    proposalMargVar = 0.25
+    proposalMargVar = 0.5
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, proposalMargVar)
 
 elif (mcmcProposal == 'indep'):
@@ -47,7 +47,7 @@ else:
 
     chainFactory.explicitTarget = tgtDensity
     chainFactory.idleSteps = 100
-    chainFactory.collectionSteps = 500
+    chainFactory.collectionSteps = 200
     chainFactory.regularisationParameter = 1e-4
     chainFactory.initialCovariance = proposalCov
 
@@ -60,8 +60,8 @@ mcmc.run(nSteps, initState)
 states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
-burnin = int(0.01 * nSteps)
-thinningStep = 6
+burnin = int(0.001 * nSteps)
+thinningStep = 8
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -106,6 +106,10 @@ plt.scatter(mcmcX, mcmcY, color='blue', marker='o', s=40,
             alpha=0.5, label='selected samples')
 plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
             marker='P', label='mcmc mean estimate')
+
+if method == 'am':
+    adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
+    plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green', marker='x', s=100, label='start of adaptive covariance')
 
 # Enhance the plot
 plt.title('2D Markov Chain Path with Target Distribution Contours')
