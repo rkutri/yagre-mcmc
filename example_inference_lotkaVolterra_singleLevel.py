@@ -169,7 +169,8 @@ ax[0].scatter(
 
 if method == 'am':
     adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
-    ax[0].scatter(chainX[adaptStart], chainY[adaptStart], color='green', marker='x', s=100, label='start of adaptive covariance')
+    ax[0].scatter(chainX[adaptStart], chainY[adaptStart], color='green',
+                  marker='x', s=100, label='start of adaptive covariance')
 
 ax[0].set_title('2D Markov Chain Path')
 ax[0].set_xlabel('X')

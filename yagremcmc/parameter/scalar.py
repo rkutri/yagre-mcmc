@@ -43,7 +43,6 @@ class ScalarParameter(ParameterInterface):
 
         return NotImplemented
 
-
     def copy_with(self, newValue):
 
         if not isinstance(newValue, self.coeffType_):

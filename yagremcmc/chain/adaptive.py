@@ -61,9 +61,9 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
 
         updCov = (nMinus / n) * self.cov_.dense() \
             + self._dimension_scaling() / n \
-                * (n * np.outer(self.mean_, self.mean_)
-                    - nPlus * np.outer(newMean, newMean)
-                    + np.outer(vector, vector)) \
+            * (n * np.outer(self.mean_, self.mean_)
+               - nPlus * np.outer(newMean, newMean)
+               + np.outer(vector, vector)) \
             + self.eps_ * self._dimension_scaling() / n * np.eye(self.dim_)
 
         self.nData_ = nPlus

@@ -44,12 +44,9 @@ class ParameterVector(ParameterInterface):
 
         return NotImplemented
 
-
     def copy_with(self, newCoefficient):
 
         if not isinstance(newCoefficient, self.coefficientType_):
             raise ValueError("Trying to change coefficient type in cloning.")
 
         return ParameterVector(self.coefficient_)
-    
-

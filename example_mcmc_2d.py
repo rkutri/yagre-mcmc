@@ -109,7 +109,8 @@ plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
 
 if method == 'am':
     adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
-    plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green', marker='x', s=100, label='start of adaptive covariance')
+    plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green',
+                marker='x', s=100, label='start of adaptive covariance')
 
 # Enhance the plot
 plt.title('2D Markov Chain Path with Target Distribution Contours')
