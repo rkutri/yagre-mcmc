@@ -15,7 +15,6 @@ class ForwardModel:
 
         self.solver_ = solver
 
-    # use memoisation
     def evaluate(self, parameter):
 
         self.solver_.interpolate(parameter)
