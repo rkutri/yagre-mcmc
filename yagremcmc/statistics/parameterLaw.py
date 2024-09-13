@@ -52,4 +52,4 @@ class Gaussian(ParameterLaw):
         xi = standard_normal(self.mean_.dimension)
         colouredXi = self.cov_.apply_chol_factor(xi)
 
-        return self.paramType_(self.mean_.coefficient + colouredXi)
+        return self.mean_.clone_with(self.mean_.coefficient + colouredXi)

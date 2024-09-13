@@ -37,16 +37,16 @@ class ParameterVector(ParameterInterface):
     def __eq__(self, other):
 
         # parameter coefficients are read-only, so a check for true equality
-        # (no floating point comparison) is what we want here, as they
+        # (no floating point comparison) is what we want here. Coefficients
         # are not supposed to change from one evaluation to a subsequent one.
         if isinstance(other, self.__class__):
             return array_equal(self.coefficient_, other.coefficient)
 
         return NotImplemented
 
-    def copy_with(self, newCoefficient):
+    def clone_with(self, newCoefficient):
 
         if not isinstance(newCoefficient, self.coefficientType_):
             raise ValueError("Trying to change coefficient type in cloning.")
 
-        return ParameterVector(self.coefficient_)
+        return self.__class__(newCoefficient)

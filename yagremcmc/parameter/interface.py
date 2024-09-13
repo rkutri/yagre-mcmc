@@ -7,11 +7,6 @@ class ParameterInterface(ABC):
     implementation represents a parameter with a given, fixed coefficient.
     """
 
-    @classmethod
-    @abstractmethod
-    def from_coefficient(cls, coefficient):
-        pass
-
     @property
     @abstractmethod
     def dimension(self):
@@ -28,10 +23,13 @@ class ParameterInterface(ABC):
 
     @abstractmethod
     def __eq__(self, other):
+        """ 
+        Test for equality. Is used in memoisation of likelihood evaluations.
+        """
         pass
 
     @abstractmethod
-    def copy_with(self, newCoefficient):
+    def clone_with(self, newCoefficient):
         """
         Returns an instance of this class with the same configuration, but
         different coefficient vector.

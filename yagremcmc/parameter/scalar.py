@@ -43,9 +43,9 @@ class ScalarParameter(ParameterInterface):
 
         return NotImplemented
 
-    def copy_with(self, newValue):
+    def clone_with(self, newValue):
 
         if not isinstance(newValue, self.coeffType_):
             raise ValueError("Trying to change coefficient type in cloning.")
 
-        return ScalarParameter(newValue)
+        return self.__class__(newValue)
