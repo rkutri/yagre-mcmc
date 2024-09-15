@@ -12,8 +12,7 @@ class Chain:
         return len(self.stateVectors_)
 
     def append(self, stateVector):
-
         self.stateVectors_.append(stateVector)
 
-
-# Thought for MLDA: Implement a hierarchical chain?
+    def clear(self):
+        self.stateVectors_ = []

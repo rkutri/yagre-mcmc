@@ -44,8 +44,8 @@ class MetropolisedRandomWalk(MetropolisHastings):
     def _acceptance_probability(self, proposal, state):
 
         # proposal is symmetric
-        densityRatio = exp(self.targetDensity_.evaluate_log(proposal)
-                           - self.targetDensity_.evaluate_log(state))
+        densityRatio = exp(self._tgtDensity.evaluate_log(proposal)
+                           - self._tgtDensity.evaluate_log(state))
 
         return densityRatio if densityRatio < 1. else 1.
 

@@ -26,19 +26,24 @@ class MetropolisHastings(ABC):
     def __init__(self, targetDensity: DensityInterface,
                  proposalMethod: ProposalMethodInterface) -> None:
 
-        self.targetDensity_ = targetDensity
-        self.proposalMethod_ = proposalMethod
+        self._tgtDensity = targetDensity
+        self._proposalMethod = proposalMethod
 
-        self.chain_ = Chain()
-        self.diagnostics_ = ChainDiagnostics(self.chain_)
+        self._chain = Chain()
+        self.diagnostics_ = ChainDiagnostics(self._chain)
 
     @property
     def chain(self):
-        return self.chain_
+        return self._chain
+
+    @property
+    def target(self):
+        return self._tgtDensity
 
     @property
     def diagnostics(self):
         return self.diagnostics_
+
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -64,9 +69,10 @@ class MetropolisHastings(ABC):
     # TODO: switch to Python logging for verbosity
     def run(self, nSteps, initialState, verbose=True):
 
-        state = initialState
+        self._chain.clear()
 
-        self.chain_.append(state.coefficient)
+        state = initialState
+        self._chain.append(state.coefficient)
 
         for n in range(nSteps - 1):
 
@@ -81,11 +87,11 @@ class MetropolisHastings(ABC):
                         print(str(n) + " steps computed")
                         print("  - rolling acceptance rate: " + str(ra))
 
-            self.proposalMethod_.state = state
-            proposal = self.proposalMethod_.generate_proposal()
+            self._proposalMethod.state = state
+            proposal = self._proposalMethod.generate_proposal()
 
             state = self._accept_reject(proposal, state)
 
-            self.chain_.append(state.coefficient)
+            self._chain.append(state.coefficient)
 
         return
