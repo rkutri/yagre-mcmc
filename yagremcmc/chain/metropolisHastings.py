@@ -1,3 +1,5 @@
+import logging
+
 from abc import ABC, abstractmethod
 from numpy.random import uniform
 
@@ -5,6 +7,10 @@ from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 from yagremcmc.chain.diagnostics import ChainDiagnostics
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class UnnormalisedPosterior(DensityInterface):
@@ -68,7 +74,6 @@ class MetropolisHastings(ABC):
             self._diagnostics.add_rejected()
             return state
 
-    # TODO: switch to Python logging for verbosity
     def run(self, nSteps, initialState, verbose=True):
 
         self._chain.clear()
@@ -82,12 +87,12 @@ class MetropolisHastings(ABC):
                 interval = nSteps // 20
                 if (n % interval == 0):
                     if (n == 0):
-                        print("Start Markov chain")
+                        logger.info("Start Markov chain")
                     else:
                         ra = self._diagnostics.rolling_acceptance_rate(
                             interval)
-                        print(str(n) + " steps computed")
-                        print("  - rolling acceptance rate: " + str(ra))
+                        logger.info(f"{n} steps computed")
+                        logger.info(f"  - rolling acceptance rate: {ra}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
