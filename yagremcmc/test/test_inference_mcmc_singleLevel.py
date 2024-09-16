@@ -8,8 +8,8 @@ from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovaria
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
-from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
+from yagremcmc.chain.metropolisedRandomWalk import MRWBuilder
+from yagremcmc.chain.preconditionedCrankNicolson import PCNBuilder
 from yagremcmc.model.forwardModel import ForwardModel
 
 
@@ -68,7 +68,7 @@ def test_mrw(mcmcProposal):
 
     seed(16)
 
-    chainFactory = MRWFactory()
+    chainBuilder = MRWBuilder()
 
     if (mcmcProposal == 'iid'):
 
@@ -83,10 +83,10 @@ def test_mrw(mcmcProposal):
     else:
         raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-    chainFactory.proposalCovariance = proposalCov
-    chainFactory.bayesModel = statModel
+    chainBuilder.proposalCovariance = proposalCov
+    chainBuilder.bayesModel = statModel
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -112,11 +112,11 @@ def test_pcn():
 
     seed(17)
 
-    chainFactory = PCNFactory()
-    chainFactory.stepSize = 0.001
-    chainFactory.bayesModel = statModel
+    chainBuilder = PCNBuilder()
+    chainBuilder.stepSize = 0.001
+    chainBuilder.bayesModel = statModel
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     # run mcmc
     nSteps = 1000

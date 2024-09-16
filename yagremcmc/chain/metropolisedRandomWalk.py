@@ -1,7 +1,7 @@
 from numpy import exp
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
-from yagremcmc.chain.factory import ChainFactory
+from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 
 
@@ -46,36 +46,36 @@ class MetropolisedRandomWalk(MetropolisHastings):
         return densityRatio if densityRatio < 1. else 1.
 
 
-class MRWFactory(ChainFactory):
+class MRWBuilder(ChainBuilder):
 
     def __init__(self):
 
         super().__init__()
-        self.proposalCov_ = None
+        self._proposalCov = None
 
     @property
     def proposalCovariance(self):
-        return self.proposalCov_
+        return self._proposalCov
 
     @proposalCovariance.setter
     def proposalCovariance(self, covariance):
-        self.proposalCov_ = covariance
+        self._proposalCov = covariance
 
     def build_from_model(self) -> MetropolisHastings:
 
         self._validate_parameters()
 
-        targetDensity = UnnormalisedPosterior(self.bayesModel_)
+        targetDensity = UnnormalisedPosterior(self._bayesModel)
 
-        return MetropolisedRandomWalk(targetDensity, self.proposalCov_)
+        return MetropolisedRandomWalk(targetDensity, self._proposalCov)
 
     def build_from_target(self) -> MetropolisHastings:
 
         self._validate_parameters()
 
-        return MetropolisedRandomWalk(self.explicitTarget_, self.proposalCov_)
+        return MetropolisedRandomWalk(self._explicitTarget, self._proposalCov)
 
     def _validate_parameters(self) -> None:
 
-        if self.proposalCov_ is None:
+        if self._proposalCov is None:
             raise ValueError("Proposal Covariance not set for MRW")

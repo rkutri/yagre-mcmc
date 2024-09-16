@@ -4,7 +4,7 @@ from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
 from yagremcmc.chain.metropolisedRandomWalk import MRWProposal
 from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
-from yagremcmc.chain.factory import ChainFactory
+from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 
 
@@ -151,9 +151,9 @@ class AdaptiveMetropolis(MetropolisHastings):
         return min(densityRatio, 1.)
 
 
-class AMFactory(ChainFactory):
+class AMBuilder(ChainBuilder):
     """
-    Factory for creating Adaptive Metropolis-Hastings (AM) chains.
+    Builder for creating Adaptive Metropolis-Hastings (AM) chains.
 
     Attributes:
     - _idleSteps: Number of steps during which the covariance is not updated.
@@ -206,14 +206,14 @@ class AMFactory(ChainFactory):
     def build_from_model(self) -> MetropolisHastings:
 
         self._validate_parameters()
-        targetDensity = UnnormalisedPosterior(self.bayesModel)
+        targetDensity = UnnormalisedPosterior(self._bayesModel)
         return AdaptiveMetropolis(targetDensity, self._initialCovariance,
                                   self._idleSteps, self._collectionSteps, self._regularisationParameter)
 
     def build_from_target(self) -> MetropolisHastings:
 
         self._validate_parameters()
-        return AdaptiveMetropolis(self.explicitTarget, self._initialCovariance,
+        return AdaptiveMetropolis(self._explicitTarget, self._initialCovariance,
                                   self._idleSteps, self._collectionSteps, self._regularisationParameter)
 
     def _validate_parameters(self) -> None:

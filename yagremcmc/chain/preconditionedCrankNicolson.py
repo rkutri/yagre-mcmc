@@ -2,7 +2,7 @@ from numpy import zeros, sqrt, exp
 
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
-from yagremcmc.chain.factory import ChainFactory
+from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 
 
@@ -16,7 +16,7 @@ class PCNProposal(ProposalMethod):
         super().__init__()
 
         self.prior_ = prior
-        self.stepSize_ = stepSize
+        self._stepSize = stepSize
 
         self.proposalLaw_ = None
 
@@ -28,7 +28,7 @@ class PCNProposal(ProposalMethod):
 
         xi = self.prior_.generate_realisation()
 
-        t = 2. * self.stepSize_
+        t = 2. * self._stepSize
         ParamType = type(self._state)
 
         return ParamType(
@@ -57,27 +57,27 @@ class PreconditionedCrankNicolson(MetropolisHastings):
         return lRatio if lRatio < 1. else 1.
 
 
-class PCNFactory(ChainFactory):
+class PCNBuilder(ChainBuilder):
 
     def __init__(self):
 
         super().__init__()
-        self.stepSize_ = None
+        self._stepSize = None
 
     @property
     def stepSize(self):
-        return self.stepSize_
+        return self._stepSize
 
     @stepSize.setter
     def stepSize(self, h):
-        self.stepSize_ = h
+        self._stepSize = h
 
     def build_from_model(self) -> MetropolisHastings:
 
         self._validate_parameters()
 
         return PreconditionedCrankNicolson(
-            self.bayesModel_.likelihood, self.bayesModel_.prior, self.stepSize_)
+            self._bayesModel.likelihood, self._bayesModel.prior, self._stepSize)
 
     def build_from_target(self) -> MetropolisHastings:
 
@@ -86,5 +86,5 @@ class PCNFactory(ChainFactory):
 
     def _validate_parameters(self) -> None:
 
-        if self.stepSize_ is None:
+        if self._stepSize is None:
             raise ValueError("Step size not set in PCN.")

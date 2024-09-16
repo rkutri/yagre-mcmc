@@ -3,7 +3,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.parameter.vector import ParameterVector
-from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.chain.adaptiveMetropolis import AMBuilder
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 
@@ -19,14 +19,14 @@ def setup_am():
 
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, 0.25)
 
-    chainFactory = AMFactory()
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.idleSteps = 100
-    chainFactory.collectionSteps = 500
-    chainFactory.regularisationParameter = 1e-4
-    chainFactory.initialCovariance = proposalCov
+    chainBuilder = AMBuilder()
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.idleSteps = 100
+    chainBuilder.collectionSteps = 500
+    chainBuilder.regularisationParameter = 1e-4
+    chainBuilder.initialCovariance = proposalCov
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     return mcmc, tgtMean.coefficient, tgtCov
 
