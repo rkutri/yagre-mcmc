@@ -5,45 +5,18 @@ from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
 
 
-class SurrogateTransition(MetropolisHastings):
-
-    def __init__(self, targetDensity, proposalMethod):
-        super.__init__(targetDensity, proposalMethod)
-
-    def _acceptance_probability(self, proposal, state):
-
-        # the proposalMethod of a SurrogateTransition is always derived from
-        # a MetropolisHastings class
-        densityRatio = exp(self._targetDensity.evaluate_log(proposal)
-                           - self._targetDensity.evaluate_log(state)
-                           + self._proposalMethod.target.evaluate_log(state)
-                           - self._proposalMethod.target.evaluate_log(proposal))
-
-
-class CompositeProposal(MetropolisHastings, ProposalMethodInterface):
+class SurrogateTransitionProposal(ProposalMethod, MetropolisHastings):
 
     def __init__(self, targetDensity, proposalMethod, subchainLength):
 
         if not isinstance(proposalMethod, MetropolisHastings):
-            raise ValueError("Proposal method of a composite proposal needs"
-                             " to be derived from MetropolisHastings class")
+            raise ValueError("Proposal method of surrogate transiton needs"
+                             " to be derived from MetropolisHastings")
 
-        # TODO: CompositeProposal is its own MetropolisHastings! no need
-        #       for an extra member. I just need to figure out the correct
-        #       super() call to set up the Metropolis Hastings
-        self._surrogateTransition = SurrogateTransition(
-            targetDensity, proposalMethod)
+        MetropolisHastings.__init__(self, targetDensity, proposalMethod)
+        ProposalMethod.__init__(self)
+
         self._subchainLength = subchainLength
-
-        self._state = None
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, newState):
-        self._state = newState
 
     def generate_proposal(self):
 
@@ -51,45 +24,42 @@ class CompositeProposal(MetropolisHastings, ProposalMethodInterface):
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 
-        self._proposalMethod.state = self._state
-        self._surrogateTransition.run(self._subchainLength, self._state)
+        # proposal of surrogate transition is itself a Metropolis-Hastings
+        # algorithm
+        self._proposalMethod.run(self._subchainLength, self._state)
 
-        return self._st.trajectory[-1]
+        return self._proposalMethod.trajectory[-1]
+
+    def _acceptance_probability(self, proposal, state):
+
+        return exp(self._targetDensity.evaluate_log(proposal)
+                   + self._proposalMethod.target.evaluate_log(state)
+                   - self._proposalMethod.target.evaluate_log(proposal)
+                   - self._targetDensity.evaluate_log(state))
 
 
-class HierarchicalProposal(ProposalMethodInterface):
+class MultiLevelDelayedAcceptanceProposal(ProposalMethod):
 
-    def __init__(self, coarseProposal, tgtMeasures):
+    def __init__(self, coarseProposal, tgtMeasures, subchainLengths):
 
-        self._state = None
         self._depth = len(tgtMeasures)
 
-        # start with coarsest level
+        # coarsest level uses MRW with coarseProposal as proposal
         self._proposalHierarchy = [MetropolisedRandomWalk(tgtMeasures[0],
                                                           coarseProposal)]
 
         for i in range(1, self._depth):
 
             self._proposalHierarchy.append(
-                CompositeProposal(tgtMeasures[i],
-                                  self._proposalHierarchy[i-1], child.target))
+                SurrogateTransitionProposal(tgtMeasures[i],
+                                            self._proposalHierarchy[i - 1],
+                                            subchainLengths[i]))
 
-    @ property
-    def state(self):
-        return self._state
-
-    @ state.setter
-    def state(self, newState):
-        self._state = newState
-
-    @ property
+    @property
     def depth(self):
         return self._depth
 
     def generate_proposal(self):
-
-        self._proposalHierarchy[-1].state = self._state
-
         return self._proposalHierarchy[-1].generate_proposal()
 
 
