@@ -1,6 +1,6 @@
 import numpy as np
 
-from yagremcmc.chain.interface import ProposalMethodInterface
+from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
 from yagremcmc.chain.metropolisedRandomWalk import MRWProposal
 from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
@@ -8,58 +8,53 @@ from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 
 
-class AMAdaptive(ProposalMethodInterface):
+class AMAdaptive(ProposalMethod):
     """
     Adaptive Proposals
     """
 
     def __init__(self, chain, eps, cSteps):
 
-        self.chain_ = chain
+        super().__init__()
 
-        initData = self.chain_.trajectory[-cSteps:]
+        self._chain = chain
+
+        initData = self._chain.trajectory[-cSteps:]
 
         nData = len(initData)
-        self.offset_ = chain.length - cSteps
+        self._offset = chain.length - cSteps
 
         mean = np.mean(initData, axis=0)
         sampCov = np.cov(np.vstack(initData), rowvar=False, bias=False)
 
-        self.cov_ = AdaptiveCovarianceMatrix(mean, sampCov, eps, nData)
+        self._cov = AdaptiveCovarianceMatrix(mean, sampCov, eps, nData)
 
-        self.state_ = None
-        self.proposalLaw_ = None
+        self._proposalLaw = None
 
-    @property
-    def state(self):
-        return self.state_
+    def set_state(self, newState):
 
-    @state.setter
-    def state(self, newState):
-
-        self.state_ = newState
-        self.proposalLaw_ = Gaussian(self.state_, self.cov_)
+        self._state = newState
+        self._proposalLaw = Gaussian(self._state, self._cov)
 
     def generate_proposal(self):
 
         self._update_covariance()
 
-        return self.proposalLaw_.generate_realisation()
+        return self._proposalLaw.generate_realisation()
 
     def _update_covariance(self):
 
-        if self.cov_.nData == self.chain_.length:
+        if self._cov.nData == self._chain.length:
             return
 
-        if self.chain_.length - self.offset_ - self.cov_.nData > 1:
+        if self._chain.length - self._offset - self._cov.nData > 1:
+            raise RuntimeError("adaptive covariance is lagging behind more "
+                               " than two states.")
 
-            raise RuntimeError("adaptive covariance is lagging behind more than"
-                               " two states.")
-
-        self.cov_.update(self.chain_.trajectory[-1])
+        self._cov.update(self._chain.trajectory[-1])
 
 
-class AdaptiveMRWProposal(ProposalMethodInterface):
+class AdaptiveMRWProposal(ProposalMethod):
     """
     Adaptive Metropolis Random Walk Proposal Method.
     """
@@ -76,58 +71,58 @@ class AdaptiveMRWProposal(ProposalMethodInterface):
         if initCov.dimension == 1:
             raise NotImplementedError("AM not implemented for scalar chains.")
 
-        self.proposalMethod_ = MRWProposal(initCov)
+        super().__init__()
+
+        self._proposalMethod = MRWProposal(initCov)
 
         self.iSteps_ = idleSteps
         self.cSteps_ = collectionSteps
         self.eps_ = regParam
 
-        self.chain_ = None
+        self._chain = None
 
-    @property
-    def state(self):
-        return self.proposalMethod_.state
+    def get_state(self):
+        return self._proposalMethod.get_state()
 
-    @state.setter
-    def state(self, newState):
-        self.proposalMethod_.state = newState
+    def set_state(self, newState):
+        self._proposalMethod.set_state(newState)
 
     @property
     def chain(self):
-        return self.chain_
+        return self._chain
 
     @chain.setter
     def chain(self, newChain):
-        self.chain_ = newChain
+        self._chain = newChain
 
     def _determine_proposal_method(self):
 
-        if self.chain_.length < self.iSteps_ + self.cSteps_:
-            assert isinstance(self.proposalMethod_, MRWProposal)
+        if self._chain.length < self.iSteps_ + self.cSteps_:
+            assert isinstance(self._proposalMethod, MRWProposal)
 
-        elif self.chain_.length == self.iSteps_ + self.cSteps_:
+        elif self._chain.length == self.iSteps_ + self.cSteps_:
 
-            currentState = self.proposalMethod_.state
+            currentState = self._proposalMethod.get_state()
 
-            self.proposalMethod_ = AMAdaptive(
-                self.chain_, self.eps_, self.cSteps_)
-            self.proposalMethod_.state = currentState
+            self._proposalMethod = AMAdaptive(
+                self._chain, self.eps_, self.cSteps_)
+            self._proposalMethod.set_state(currentState)
 
-        elif self.chain_.length > self.iSteps_ + self.cSteps_:
-            assert isinstance(self.proposalMethod_, AMAdaptive)
+        elif self._chain.length > self.iSteps_ + self.cSteps_:
+            assert isinstance(self._proposalMethod, AMAdaptive)
 
         else:
             raise RuntimeError("Undefined adaptive Metropolis chain state.")
 
     def generate_proposal(self):
 
-        if self.chain_ is None:
+        if self._chain is None:
             raise ValueError(
                 "Adaptive Proposal is not associated with a chain yet.")
 
         self._determine_proposal_method()
 
-        return self.proposalMethod_.generate_proposal()
+        return self._proposalMethod.generate_proposal()
 
 
 class AdaptiveMetropolis(MetropolisHastings):
@@ -142,16 +137,17 @@ class AdaptiveMetropolis(MetropolisHastings):
     - regParam: Regularization parameter used for adaptive covariance calculation.
     """
 
-    def __init__(self, targetDensity, initCov, idleSteps, collectionSteps, regParam):
+    def __init__(self, targetDensity, initCov,
+                 idleSteps, collectionSteps, regParam):
 
         proposalMethod = AdaptiveMRWProposal(
             initCov, idleSteps, collectionSteps, regParam)
         super().__init__(targetDensity, proposalMethod)
-        self.proposalMethod_.chain = self.chain_
+        self._proposalMethod.chain = self._chain
 
     def _acceptance_probability(self, proposal, state):
-        densityRatio = np.exp(self.targetDensity_.evaluate_log(proposal)
-                              - self.targetDensity_.evaluate_log(state))
+        densityRatio = np.exp(self._tgtDensity.evaluate_log(proposal)
+                              - self._tgtDensity.evaluate_log(state))
         return min(densityRatio, 1.)
 
 
@@ -160,71 +156,73 @@ class AMFactory(ChainFactory):
     Factory for creating Adaptive Metropolis-Hastings (AM) chains.
 
     Attributes:
-    - idleSteps_: Number of steps during which the covariance is not updated.
-    - collectionSteps_: Number of steps where samples are collected without updating the covariance.
-    - regularisationParameter_: Regularization parameter for covariance adaptation.
-    - initialCovariance_: Initial covariance matrix.
+    - _idleSteps: Number of steps during which the covariance is not updated.
+    - _collectionSteps: Number of steps where samples are collected without updating the covariance.
+    - _regularisationParameter: Regularization parameter for covariance adaptation.
+    - _initialCovariance: Initial covariance matrix.
     """
 
     def __init__(self):
         super().__init__()
-        self.idleSteps_ = None
-        self.collectionSteps_ = None
-        self.regularisationParameter_ = None
-        self.initialCovariance_ = None
+        self._idleSteps = None
+        self._collectionSteps = None
+        self._regularisationParameter = None
+        self._initialCovariance = None
 
     @property
     def idleSteps(self):
-        return self.idleSteps_
+        return self._idleSteps
 
     @idleSteps.setter
     def idleSteps(self, iSteps):
-        self.idleSteps_ = iSteps
+        self._idleSteps = iSteps
 
     @property
     def collectionSteps(self):
-        return self.collectionSteps_
+        return self._collectionSteps
 
     @collectionSteps.setter
     def collectionSteps(self, cSteps):
-        self.collectionSteps_ = cSteps
+        self._collectionSteps = cSteps
 
     @property
     def regularisationParameter(self):
-        return self.regularisationParameter_
+        return self._regularisationParameter
 
     @regularisationParameter.setter
     def regularisationParameter(self, eps):
         if eps < 0:
             raise ValueError("Regularisation parameter must be non-negative.")
-        self.regularisationParameter_ = eps
+        self._regularisationParameter = eps
 
     @property
     def initialCovariance(self):
-        return self.initialCovariance_
+        return self._initialCovariance
 
     @initialCovariance.setter
     def initialCovariance(self, cov):
-        self.initialCovariance_ = cov
+        self._initialCovariance = cov
 
     def build_from_model(self) -> MetropolisHastings:
 
         self._validate_parameters()
         targetDensity = UnnormalisedPosterior(self.bayesModel)
-        return AdaptiveMetropolis(targetDensity, self.initialCovariance_, self.idleSteps_, self.collectionSteps_, self.regularisationParameter_)
+        return AdaptiveMetropolis(targetDensity, self._initialCovariance,
+                                  self._idleSteps, self._collectionSteps, self._regularisationParameter)
 
     def build_from_target(self) -> MetropolisHastings:
 
         self._validate_parameters()
-        return AdaptiveMetropolis(self.explicitTarget, self.initialCovariance_, self.idleSteps_, self.collectionSteps_, self.regularisationParameter_)
+        return AdaptiveMetropolis(self.explicitTarget, self._initialCovariance,
+                                  self._idleSteps, self._collectionSteps, self._regularisationParameter)
 
     def _validate_parameters(self) -> None:
 
-        if self.idleSteps_ is None:
+        if self._idleSteps is None:
             raise ValueError("Number of idle steps not set in AM.")
-        if self.collectionSteps_ is None:
+        if self._collectionSteps is None:
             raise ValueError("Number of collection steps not set in AM.")
-        if self.regularisationParameter_ is None:
+        if self._regularisationParameter is None:
             raise ValueError("Regularisation parameter not set in AM.")
-        if self.initialCovariance_ is None:
+        if self._initialCovariance is None:
             raise ValueError("Initial covariance not set in AM.")

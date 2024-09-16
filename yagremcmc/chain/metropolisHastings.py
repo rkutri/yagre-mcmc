@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from numpy.random import uniform
+
 from yagremcmc.statistics.interface import DensityInterface
-from yagremcmc.chain.interface import ProposalMethodInterface
+from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 from yagremcmc.chain.diagnostics import ChainDiagnostics
 
@@ -24,13 +25,15 @@ class MetropolisHastings(ABC):
     """
 
     def __init__(self, targetDensity: DensityInterface,
-                 proposalMethod: ProposalMethodInterface) -> None:
+                 proposalMethod: ProposalMethod) -> None:
+
+        super().__init__()
 
         self._tgtDensity = targetDensity
         self._proposalMethod = proposalMethod
 
         self._chain = Chain()
-        self.diagnostics_ = ChainDiagnostics(self._chain)
+        self._diagnostics = ChainDiagnostics(self._chain)
 
     @property
     def chain(self):
@@ -42,8 +45,7 @@ class MetropolisHastings(ABC):
 
     @property
     def diagnostics(self):
-        return self.diagnostics_
-
+        return self._diagnostics
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -59,11 +61,11 @@ class MetropolisHastings(ABC):
 
         if decision <= acceptProb:
 
-            self.diagnostics_.add_accepted()
+            self._diagnostics.add_accepted()
             return proposal
 
         else:
-            self.diagnostics_.add_rejected()
+            self._diagnostics.add_rejected()
             return state
 
     # TODO: switch to Python logging for verbosity
@@ -82,12 +84,12 @@ class MetropolisHastings(ABC):
                     if (n == 0):
                         print("Start Markov chain")
                     else:
-                        ra = self.diagnostics_.rolling_acceptance_rate(
+                        ra = self._diagnostics.rolling_acceptance_rate(
                             interval)
                         print(str(n) + " steps computed")
                         print("  - rolling acceptance rate: " + str(ra))
 
-            self._proposalMethod.state = state
+            self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
 
             state = self._accept_reject(proposal, state)

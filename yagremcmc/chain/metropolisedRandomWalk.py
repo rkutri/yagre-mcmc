@@ -1,32 +1,28 @@
 from numpy import exp
-from yagremcmc.chain.interface import ProposalMethodInterface
+from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
 from yagremcmc.chain.factory import ChainFactory
 from yagremcmc.statistics.parameterLaw import Gaussian
 
 
-class MRWProposal(ProposalMethodInterface):
+class MRWProposal(ProposalMethod):
 
     def __init__(self, proposalCov):
 
+        super().__init__()
+
         self.cov_ = proposalCov
 
-        self.state_ = None
         self.proposalLaw_ = None
 
-    @property
-    def state(self):
-        return self.state_
+    def set_state(self, newState):
 
-    @state.setter
-    def state(self, newState):
-
-        self.state_ = newState
-        self.proposalLaw_ = Gaussian(self.state_, self.cov_)
+        self._state = newState
+        self.proposalLaw_ = Gaussian(self._state, self.cov_)
 
     def generate_proposal(self):
 
-        if self.state_ is None:
+        if self._state is None:
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 

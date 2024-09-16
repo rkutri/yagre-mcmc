@@ -20,7 +20,7 @@ def test_metropolishastings_initialisation():
 
     mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
-    assert isinstance(mc.targetDensity_, type(tgtDensity))
+    assert isinstance(mc.target, type(tgtDensity))
     assert mc.chain.trajectory == []
 
 
