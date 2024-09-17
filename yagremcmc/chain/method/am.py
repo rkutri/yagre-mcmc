@@ -2,7 +2,7 @@ import numpy as np
 
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
-from yagremcmc.chain.metropolisedRandomWalk import MRWProposal
+from yagremcmc.chain.method.mrw import MRWProposal
 from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian

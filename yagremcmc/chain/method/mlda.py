@@ -2,7 +2,7 @@ from numpy import exp
 
 from yagremcmc.chain.interface import ProposalMethodInterface
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
-from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
 
 
 class SurrogateTransitionProposal(ProposalMethod, MetropolisHastings):
@@ -42,29 +42,23 @@ class MultiLevelDelayedAcceptanceProposal(ProposalMethod):
 
     def __init__(self, coarseProposal, tgtMeasures, subchainLengths):
 
-        self._depth = len(tgtMeasures)
-
         # coarsest level uses MRW with coarseProposal as proposal
         self._proposalHierarchy = [MetropolisedRandomWalk(tgtMeasures[0],
                                                           coarseProposal)]
 
-        for i in range(1, self._depth):
+        for i in range(1, len(tgtMeasures)):
 
             self._proposalHierarchy.append(
                 SurrogateTransitionProposal(tgtMeasures[i],
                                             self._proposalHierarchy[i - 1],
                                             subchainLengths[i]))
 
-    @property
-    def depth(self):
-        return self._depth
-
     def generate_proposal(self):
         return self._proposalHierarchy[-1].generate_proposal()
 
 
 # role of client code
-class HierarchicalMetropolisHastings(MetropolisHastings):
+class MultiLevelDelayedAcceptance(MetropolisHastings):
 
     def __init__(self, proposalMethod, numLevels):
         pass

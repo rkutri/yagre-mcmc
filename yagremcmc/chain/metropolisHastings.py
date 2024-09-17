@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from numpy.random import uniform
 
 from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 from yagremcmc.chain.diagnostics import ChainDiagnostics
@@ -11,18 +12,6 @@ from yagremcmc.chain.diagnostics import ChainDiagnostics
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-class UnnormalisedPosterior(DensityInterface):
-
-    def __init__(self, model):
-
-        self.model_ = model
-
-    def evaluate_log(self, parameter):
-
-        return self.model_.log_likelihood(parameter) \
-            + self.model_.log_prior(parameter)
 
 
 class MetropolisHastings(ABC):
@@ -77,9 +66,9 @@ class MetropolisHastings(ABC):
     def run(self, nSteps, initialState, verbose=True):
 
         self._chain.clear()
+        self._chain.append(initialState.coefficient)
 
         state = initialState
-        self._chain.append(state.coefficient)
 
         for n in range(nSteps - 1):
 

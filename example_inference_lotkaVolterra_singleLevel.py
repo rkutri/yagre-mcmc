@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
-from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
-from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
-from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.chain.method.mrw import MRWBuilder
+from yagremcmc.chain.method.pcn import PCNBuilder
+from yagremcmc.chain.method.am import AMBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
@@ -61,8 +61,8 @@ statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
 # configure the chain setup
 if method == 'pcn':
 
-    chainFactory = PCNFactory()
-    chainFactory.stepSize = 0.01
+    chainBuilder = PCNBuilder()
+    chainBuilder.stepSize = 0.01
 
 elif method in ['mrw', 'am']:
 
@@ -82,17 +82,17 @@ elif method in ['mrw', 'am']:
 
     if method == 'mrw':
 
-        chainFactory = MRWFactory()
-        chainFactory.proposalCovariance = proposalCov
+        chainBuilder = MRWBuilder()
+        chainBuilder.proposalCovariance = proposalCov
 
     elif method == 'am':
 
-        chainFactory = AMFactory()
+        chainBuilder = AMBuilder()
 
-        chainFactory.idleSteps = 50
-        chainFactory.collectionSteps = 100
-        chainFactory.regularisationParameter = 1e-6
-        chainFactory.initialCovariance = proposalCov
+        chainBuilder.idleSteps = 50
+        chainBuilder.collectionSteps = 100
+        chainBuilder.regularisationParameter = 1e-6
+        chainBuilder.initialCovariance = proposalCov
 
     else:
         raise ValueError("Unknown MCMC method: " + method)
@@ -101,9 +101,9 @@ elif method in ['mrw', 'am']:
 else:
     raise ValueError("Unknown MCMC method: " + method)
 
-chainFactory.bayesModel = statModel
+chainBuilder.bayesModel = statModel
 
-sampler = chainFactory.build_method()
+sampler = chainBuilder.build_method()
 
 # run mcmc
 nSteps = 5000
@@ -168,7 +168,7 @@ ax[0].scatter(
     s=120)
 
 if method == 'am':
-    adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
+    adaptStart = chainBuilder.idleSteps + chainBuilder.collectionSteps - 1
     ax[0].scatter(chainX[adaptStart], chainY[adaptStart], color='green',
                   marker='x', s=100, label='start of adaptive covariance')
 

@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
-from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.chain.method.mrw import MRWBuilder
+from yagremcmc.chain.method.am import AMBuilder
 from yagremcmc.parameter.vector import ParameterVector
 
 
@@ -36,22 +36,22 @@ else:
 assert method in ('mrw', 'am')
 if method == 'mrw':
 
-    chainFactory = MRWFactory()
+    chainBuilder = MRWBuilder()
 
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.proposalCovariance = proposalCov
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.proposalCovariance = proposalCov
 
 else:
 
-    chainFactory = AMFactory()
+    chainBuilder = AMBuilder()
 
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.idleSteps = 100
-    chainFactory.collectionSteps = 200
-    chainFactory.regularisationParameter = 1e-4
-    chainFactory.initialCovariance = proposalCov
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.idleSteps = 100
+    chainBuilder.collectionSteps = 200
+    chainBuilder.regularisationParameter = 1e-4
+    chainBuilder.initialCovariance = proposalCov
 
-mcmc = chainFactory.build_method()
+mcmc = chainBuilder.build_method()
 
 nSteps = 50000
 initState = ParameterVector(np.array([-8., -7.]))
@@ -108,7 +108,7 @@ plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
             marker='P', label='mcmc mean estimate')
 
 if method == 'am':
-    adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
+    adaptStart = chainBuilder.idleSteps + chainBuilder.collectionSteps - 1
     plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green',
                 marker='x', s=100, label='start of adaptive covariance')
 

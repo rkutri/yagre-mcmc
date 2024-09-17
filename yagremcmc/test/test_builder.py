@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, create_autospec
-from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk, MRWBuilder
-from yagremcmc.chain.preconditionedCrankNicolson import PreconditionedCrankNicolson, PCNBuilder
+from yagremcmc.chain.method.mrw import MetropolisedRandomWalk, MRWBuilder
+from yagremcmc.chain.method.pcn import PreconditionedCrankNicolson, PCNBuilder
 
 
 def test_MRWBuilder():
