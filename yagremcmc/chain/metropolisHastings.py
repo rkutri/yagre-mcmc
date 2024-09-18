@@ -9,10 +9,20 @@ from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 from yagremcmc.chain.diagnostics import ChainDiagnostics
 
+# Set up the logger
+mhLogger = logging.getLogger(__name__)
+mhLogger.setLevel(logging.INFO)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# Create a console handler
+consoleHandler = logging.StreamHandler()
 
+# Set a logging format
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(levelname)s: %(message)s')
+consoleHandler.setFormatter(formatter)
+
+# Add the console handler to the mhLogger
+mhLogger.addHandler(consoleHandler)
 
 class MetropolisHastings(ABC):
     """
@@ -76,12 +86,12 @@ class MetropolisHastings(ABC):
                 interval = nSteps // 20
                 if (n % interval == 0):
                     if (n == 0):
-                        logger.info("Start Markov chain")
+                        mhLogger.info("Start Markov chain")
                     else:
                         ra = self._diagnostics.rolling_acceptance_rate(
                             interval)
-                        logger.info(f"{n} steps computed")
-                        logger.info(f"  - rolling acceptance rate: {ra}")
+                        mhLogger.info(f"{n} steps computed")
+                        mhLogger.info(f"  - rolling acceptance rate: {ra}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()

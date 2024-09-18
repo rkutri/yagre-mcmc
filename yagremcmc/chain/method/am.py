@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 
 from yagremcmc.chain.proposal import ProposalMethod
@@ -6,6 +8,17 @@ from yagremcmc.chain.method.mrw import MRWProposal
 from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
+
+
+amLogger = logging.getLogger(__name__)
+amLogger.setLevel(logging.INFO)
+
+consoleHandler = logging.StreamHandler()
+
+formatter = logging.Formatter('%(levelname)s - %(name)s: %(message)s')
+consoleHandler.setFormatter(formatter)
+
+amLogger.addHandler(consoleHandler)
 
 
 class AMAdaptive(ProposalMethod):
@@ -107,6 +120,8 @@ class AdaptiveMRWProposal(ProposalMethod):
             self._proposalMethod = AMAdaptive(
                 self._chain, self.eps_, self.cSteps_)
             self._proposalMethod.set_state(currentState)
+
+            amLogger.info("Start adaptive covariance")
 
         elif self._chain.length > self.iSteps_ + self.cSteps_:
             assert isinstance(self._proposalMethod, AMAdaptive)
