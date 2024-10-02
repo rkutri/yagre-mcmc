@@ -23,6 +23,7 @@ consoleHandler.setFormatter(formatter)
 # Add the console handler to the mhLogger
 mhLogger.addHandler(consoleHandler)
 
+
 class MetropolisHastings(ABC):
     """
     Template class for Metropolis-Hastings-type chains
@@ -60,13 +61,13 @@ class MetropolisHastings(ABC):
 
         if decision <= acceptProb:
 
-            isAccepted = True
+            isAccepted = 1
             return proposal, isAccepted
 
         else:
 
-            isAccepted = False
-            return state, isAccepted 
+            isAccepted = 0
+            return state, isAccepted
 
     def run(self, nSteps, initialState, verbose=True):
 
