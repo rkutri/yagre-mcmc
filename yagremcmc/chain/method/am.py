@@ -5,7 +5,7 @@ import numpy as np
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
 from yagremcmc.chain.method.mrw import MRWProposal
-from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
+from yagremcmc.chain.adaptive import AMCovarianceMatrix
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 
@@ -21,7 +21,7 @@ consoleHandler.setFormatter(formatter)
 amLogger.addHandler(consoleHandler)
 
 
-class AMAdaptive(ProposalMethod):
+class AMProposal(ProposalMethod):
     """
     Adaptive Proposals
     """
@@ -40,7 +40,7 @@ class AMAdaptive(ProposalMethod):
         mean = np.mean(initData, axis=0)
         sampCov = np.cov(np.vstack(initData), rowvar=False, bias=False)
 
-        self._cov = AdaptiveCovarianceMatrix(mean, sampCov, eps, nData)
+        self._cov = AMCovarianceMatrix(mean, sampCov, eps, nData)
 
         self._proposalLaw = None
 
@@ -75,10 +75,14 @@ class AdaptiveMRWProposal(ProposalMethod):
     def __init__(self, initCov, idleSteps, collectionSteps, regParam):
         """
         Parameters:
-        - initCov: Initial covariance matrix to be used during the IDLE and COLLECTION phases.
-        - idleSteps: Number of steps during which the covariance is not updated (IDLE phase).
-        - collectionSteps: Number of steps where samples are collected but the covariance is not updated (COLLECTION phase).
-        - regParam: Regularization parameter used for adaptive covariance calculation.
+        - initCov: Initial covariance matrix to be used during the IDLE and
+                     COLLECTION phases.
+        - idleSteps: Number of steps during which the covariance is not updated
+                     (IDLE phase).
+        - collectionSteps: Number of steps where samples are collected but the
+                           covariance is not updated (COLLECTION phase).
+        - regParam: Regularization parameter used for adaptive covariance
+                    calculation.
         """
 
         if initCov.dimension == 1:
@@ -117,14 +121,14 @@ class AdaptiveMRWProposal(ProposalMethod):
 
             currentState = self._proposalMethod.get_state()
 
-            self._proposalMethod = AMAdaptive(
+            self._proposalMethod = AMProposal(
                 self._chain, self.eps_, self.cSteps_)
             self._proposalMethod.set_state(currentState)
 
             amLogger.info("Start adaptive covariance")
 
         elif self._chain.length > self.iSteps_ + self.cSteps_:
-            assert isinstance(self._proposalMethod, AMAdaptive)
+            assert isinstance(self._proposalMethod, AMProposal)
 
         else:
             raise RuntimeError("Undefined adaptive Metropolis chain state.")

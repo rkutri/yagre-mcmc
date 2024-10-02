@@ -4,7 +4,7 @@ from yagremcmc.statistics.interface import CovarianceOperatorInterface
 from yagremcmc.statistics.covariance import DenseCovarianceMatrix
 
 
-class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
+class AMCovarianceMatrix(CovarianceOperatorInterface):
 
     def __init__(self, initMean, initSampCov, eps, nData):
 
