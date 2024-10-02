@@ -7,7 +7,6 @@ from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
-from yagremcmc.chain.diagnostics import ChainDiagnostics
 
 # Set up the logger
 mhLogger = logging.getLogger(__name__)
@@ -38,7 +37,6 @@ class MetropolisHastings(ABC):
         self._proposalMethod = proposalMethod
 
         self._chain = Chain()
-        self._diagnostics = ChainDiagnostics(self._chain)
 
     @property
     def chain(self):
@@ -47,10 +45,6 @@ class MetropolisHastings(ABC):
     @property
     def target(self):
         return self._tgtDensity
-
-    @property
-    def diagnostics(self):
-        return self._diagnostics
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -66,17 +60,18 @@ class MetropolisHastings(ABC):
 
         if decision <= acceptProb:
 
-            self._diagnostics.add_accepted()
-            return proposal
+            isAccepted = True
+            return proposal, isAccepted
 
         else:
-            self._diagnostics.add_rejected()
-            return state
+
+            isAccepted = False
+            return state, isAccepted 
 
     def run(self, nSteps, initialState, verbose=True):
 
         self._chain.clear()
-        self._chain.append(initialState.coefficient)
+        self._chain.append(initialState.coefficient, True)
 
         state = initialState
 
@@ -88,7 +83,7 @@ class MetropolisHastings(ABC):
                     if (n == 0):
                         mhLogger.info("Start Markov chain")
                     else:
-                        ra = self._diagnostics.rolling_acceptance_rate(
+                        ra = self._chain.diagnostics.rolling_acceptance_rate(
                             interval)
                         mhLogger.info(f"{n} steps computed")
                         mhLogger.info(f"  - rolling acceptance rate: {ra}")
@@ -96,8 +91,8 @@ class MetropolisHastings(ABC):
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
 
-            state = self._accept_reject(proposal, state)
+            state, isAccepted = self._accept_reject(proposal, state)
 
-            self._chain.append(state.coefficient)
+            self._chain.append(state.coefficient, isAccepted)
 
         return
