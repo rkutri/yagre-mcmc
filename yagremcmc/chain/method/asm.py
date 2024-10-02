@@ -44,6 +44,9 @@ class ASMProposal(ProposalMethod):
         self._empiricalCov = np.dot(self._cStates, self._cStates.T) \
             / (self._nData - 1)
 
+        # FIXME
+        self._shrinkageTarget = ...
+
         self._proposalLaw = None
 
         asmLogger.info(f"Adaptive covariance initialised using {self._nData}"
@@ -51,10 +54,10 @@ class ASMProposal(ProposalMethod):
 
     def set_state(self, newState):
 
+        proposalCov = ledoit_wolf_shrinkage(self._empiricalCov,
+                                            self._shrinkageTarget)
+
         self._state = newState
-
-        proposalCov = ledoit_wolf_shrinkage(self._empiricalCov)
-
         self._proposalLaw = Gaussian(self._state, proposalCov)
 
     def generate_proposal(self):
