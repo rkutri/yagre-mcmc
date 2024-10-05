@@ -1,73 +1,73 @@
 import numpy as np
 
-from yagremcmc.statistics.interface import CovarianceOperatorInterface
-from yagremcmc.statistics.covariance import DenseCovarianceMatrix
+from yagremcmc.chain.proposal import ProposalMethod
+
+# TODO: reuse structure from the asm proposal
+class AdaptiveProposal(ProposalMethod):
+
+    def __init__(self, initCov, adaptiveCov, idleSteps):
+        """
+        Parameters:
+        - initCov: Initial covariance matrix to be used during the IDLE phase
+        - adaptiveCov: Adaptive covariance matrix to be used after IDLE phase
+        - idleSteps: Number of steps during which the covariance is not updated
+                     (IDLE phase).
+        """
+
+        if initCov.dimension == 1:
+            raise NotImplementedError("Adaptivity not implemented for scalar chains.")
+
+        super().__init__()
+
+        self._proposalMethod = MRWProposal(initCov)
+
+        self.iSteps_ = idleSteps
+        self.cSteps_ = collectionSteps
 
 
-class ASCovarianceMatrix(CovarianceOperatorInterface):
-    pass
+    def get_state(self):
+        return self._proposalMethod.get_state()
 
-
-class AMCovarianceMatrix(CovarianceOperatorInterface):
-
-    def __init__(self, initMean, initSampCov, eps, nData):
-
-        self.mean_ = initMean
-        self.eps_ = eps
-        self.nData_ = nData
-
-        self.dim_ = initMean.size
-        self.scaling_ = 1.
-
-        regCov = self._dimension_scaling() \
-            * ((1. - eps) * initSampCov + eps * np.eye(self.dim_))
-        self.cov_ = DenseCovarianceMatrix(regCov)
-
-    @property
-    def dimension(self):
-        return self.dim_
-
-    @property
-    def scaling(self):
-        return self.scaling_
-
-    @scaling.setter
-    def scaling(self, value):
-        self.scaling_ = value
+    def set_state(self, newState):
+        self._proposalMethod.set_state(newState)
 
     @property
-    def nData(self):
-        return self.nData_
+    def chain(self):
+        return self._chain
 
-    def dense_covariance_matrix(self):
-        return self.cov_.dense()
+    @chain.setter
+    def chain(self, newChain):
+        self._chain = newChain
 
-    def update(self, vector):
+    def _determine_proposal_method(self):
 
-        n = self.nData_
-        nPlus = self.nData_ + 1
-        nMinus = self.nData_ - 1
+        if self._chain.length < self.iSteps_ + self.cSteps_:
+            assert isinstance(self._proposalMethod, MRWProposal)
 
-        newMean = (self.nData_ * self.mean_ + vector) / nPlus
+        elif self._chain.length == self.iSteps_ + self.cSteps_:
 
-        updCov = (nMinus / n) * self.cov_.dense() \
-            + self._dimension_scaling() / n \
-            * (n * np.outer(self.mean_, self.mean_)
-               - nPlus * np.outer(newMean, newMean)
-               + np.outer(vector, vector)
-               + self.eps_ * np.eye(self.dim_))
+            currentState = self._proposalMethod.get_state()
 
-        self.nData_ = nPlus
-        self.mean_ = newMean
-        self.cov_ = DenseCovarianceMatrix(updCov)
+            self._proposalMethod = AMProposal(
+                self._chain, self.eps_, self.cSteps_)
+            self._proposalMethod.set_state(currentState)
 
-        self.cov_.scaling = self.scaling_
+            amLogger.info("Start adaptive covariance")
 
-    def apply_chol_factor(self, x):
-        return self.cov_.apply_chol_factor(x)
+        elif self._chain.length > self.iSteps_ + self.cSteps_:
+            assert isinstance(self._proposalMethod, AMProposal)
 
-    def apply_inverse(self, x):
-        return self.cov_.apply_inverse(x)
+        else:
+            raise RuntimeError("Undefined adaptive Metropolis chain state.")
 
-    def _dimension_scaling(self):
-        return 4. / self.dim_
+    def generate_proposal(self):
+
+        if self._chain is None:
+            raise ValueError(
+                "Adaptive Proposal is not associated with a chain yet.")
+
+        self._determine_proposal_method()
+
+        return self._proposalMethod.generate_proposal()
+
+
