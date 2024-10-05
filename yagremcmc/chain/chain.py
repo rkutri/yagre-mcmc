@@ -30,7 +30,7 @@ class Chain:
         else:
             self._diagnostics.add_rejected()
 
-    def accepted_states(self, startIdx=0):
+    def accepted_states(self, startIdx):
         """
             startIdx: starting index of the trajectory, from which on to
                       consider the states.

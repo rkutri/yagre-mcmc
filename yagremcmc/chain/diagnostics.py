@@ -1,4 +1,4 @@
-from numpy import array, average
+import numpy as np
 
 
 class ChainDiagnostics:
@@ -18,10 +18,10 @@ class ChainDiagnostics:
         self._decisions.append(0)
 
     def rolling_acceptance_rate(self, lag):
-        return average(array(self._decisions[-lag:]))
+        return np.mean(np.array(self._decisions[-lag:]))
 
     def global_acceptance_rate(self):
-        return average(array(self._decisions))
+        return np.mean(np.array(self._decisions))
 
     def clear(self):
         self._decisions = []

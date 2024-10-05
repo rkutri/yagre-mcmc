@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from numpy.random import uniform
 
 from yagremcmc.statistics.interface import DensityInterface
-from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 
@@ -69,7 +68,7 @@ class MetropolisHastings(ABC):
             isAccepted = 0
             return state, isAccepted
 
-    def run(self, nSteps, initialState, verbose=True):
+    def run(self, nSteps, initialState, verbose=True, nPrintIntervals=20):
 
         self._chain.clear()
         self._chain.append(initialState.coefficient, True)
@@ -79,15 +78,19 @@ class MetropolisHastings(ABC):
         for n in range(nSteps - 1):
 
             if verbose:
-                interval = nSteps // 20
+                interval = nSteps // nPrintIntervals
                 if (n % interval == 0):
                     if (n == 0):
                         mhLogger.info("Start Markov chain")
                     else:
-                        ra = self._chain.diagnostics.rolling_acceptance_rate(
+                        
+                        mhLogger.info(f"{n} steps computed. Calculating diagnostics.")
+
+                        rAccept = \
+                            self._chain.diagnostics.rolling_acceptance_rate(
                             interval)
-                        mhLogger.info(f"{n} steps computed")
-                        mhLogger.info(f"  - rolling acceptance rate: {ra}")
+                        
+                        mhLogger.info(f"  - rolling acceptance rate: {rAccept}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
