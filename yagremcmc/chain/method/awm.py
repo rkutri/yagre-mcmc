@@ -6,8 +6,7 @@ from yagremcmc.chain.adaptive import AdaptiveMRWProposal, AdaptiveCovarianceMatr
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.chain.target import UnnormalisedPosterior
-from yagremcmc.statistics.covariance import IIDCovarianceMatrix
-from yagremcmc.statistics.regularisation import regularised_marginal_variance_weights
+from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix
 
 
 awCovLogger = logging.getLogger(__name__)
@@ -26,9 +25,6 @@ class AdaptiveWeightingCovarianceMatrix(AdaptiveCovarianceMatrix):
     def __init__(self, initCov, idleSteps, collectionSteps):
 
         super().__init__(initCov)
-
-        if not isinstance(initCov, IIDCovarianceMatrix):
-            raise ValueError("Adaptive weighting only works with i.i.d. initial covariance matrix.")
 
         self._idleSteps = idleSteps
         self._collectionSteps = collectionSteps
@@ -73,9 +69,7 @@ class AdaptiveWeightingCovarianceMatrix(AdaptiveCovarianceMatrix):
 
             margVar = self._aggSquaredDiff / (self._nData - 1)
 
-            weights = regularised_marginal_variance_weights(margVar)
-
-            self._cov.reweight_dimensions(weights)
+            self._cov == DiagonalCovarianceMatrix(margVar)
 
     def _wellford_update(self, states):
         """

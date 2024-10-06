@@ -18,23 +18,16 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
     def __init__(self, marginalVariances):
 
         self._precision = np.reciprocal(marginalVariances)
-        self._dimWeights = np.ones_like(marginalVariances)
 
     @property
     def dimension(self):
         return self._precision.size
 
-    def reweight_dimensions(self, weights):
-        self._dimWeights = weights
-
-    def reset_weights(self):
-        self._dimWeights = np.ones_like(self.dimension)
-
     def apply_chol_factor(self, x):
-        return np.sqrt(self._dimWeights * np.reciprocal(self._precision)) * x
+        return np.sqrt(np.reciprocal(self._precision)) * x
 
     def apply_inverse(self, x):
-        return self._precision / self._dimWeights * x
+        return self._precision * x
 
 
 class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
@@ -62,9 +55,6 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
     @property
     def dimension(self):
         return self.dim_
-
-    def reweight_dimensions(self, weights):
-        raise NotImplementedError("Reweighting dimensions not implemented.")
 
     def apply_chol_factor(self, x):
 

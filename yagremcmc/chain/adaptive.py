@@ -19,9 +19,6 @@ class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
     def set_chain(self, chain):
         self._chain = chain
 
-    def reweight_dimensions(self, weights):
-        self._cov.reweight_dimensions(weights)
-
     def apply_chol_factor(self, x):
         return self._cov.apply_chol_factor(x)
 

@@ -16,8 +16,8 @@ mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[8.2, -0.5],
-     [-0.5, 0.1]])
+    [[2.4, -0.5],
+     [-0.5, 0.7]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
@@ -46,7 +46,7 @@ else:
     chainBuilder = AWMBuilder()
 
     chainBuilder.explicitTarget = tgtDensity
-    chainBuilder.idleSteps = 20000
+    chainBuilder.idleSteps = 5000
     chainBuilder.collectionSteps = 5000
     chainBuilder.initialCovariance = proposalCov
 
