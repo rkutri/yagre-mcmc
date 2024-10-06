@@ -16,13 +16,13 @@ mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[2.2, -0.5],
-     [-0.5, 0.3]])
+    [[8.2, -0.5],
+     [-0.5, 0.1]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
 
-    proposalMargVar = 0.5
+    proposalMargVar = 1.0
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, proposalMargVar)
 
 elif (mcmcProposal == 'indep'):
@@ -46,20 +46,20 @@ else:
     chainBuilder = AWMBuilder()
 
     chainBuilder.explicitTarget = tgtDensity
-    chainBuilder.idleSteps = 500
-    chainBuilder.collectionSteps = 2500
+    chainBuilder.idleSteps = 20000
+    chainBuilder.collectionSteps = 5000
     chainBuilder.initialCovariance = proposalCov
 
 mcmc = chainBuilder.build_method()
 
-nSteps = 10000
+nSteps = 50000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
-burnin = int(0.001 * nSteps)
+burnin = 1000
 thinningStep = 8
 
 mcmcSamples = states[burnin::thinningStep]
@@ -74,8 +74,8 @@ print("mean estimate: " + str(meanEst))
 print("acceptance rate: " + str(mcmc.chain.diagnostics.global_acceptance_rate()))
 
 # plotting
-xGrid = np.linspace(-8., 8., 200)
-yGrid = np.linspace(-8., 8., 200)
+xGrid = np.linspace(-8., 8., 400)
+yGrid = np.linspace(-8., 8., 400)
 
 # Create a grid for the contour plot
 X, Y = np.meshgrid(xGrid, yGrid)

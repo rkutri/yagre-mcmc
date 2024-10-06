@@ -50,7 +50,7 @@ class AdaptiveMRWProposal(ProposalMethod):
         self._adaptiveCov = adaptiveCov
 
         self._proposalMethod = MRWProposal(self._adaptiveCov.covariance)
-    
+
     @property
     def covariance(self):
         return self._adaptiveCov

@@ -6,6 +6,7 @@ from yagremcmc.chain.adaptive import AdaptiveMRWProposal, AdaptiveCovarianceMatr
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.chain.target import UnnormalisedPosterior
+from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.statistics.regularisation import regularised_marginal_variance_weights
 
 
@@ -26,11 +27,17 @@ class AdaptiveWeightingCovarianceMatrix(AdaptiveCovarianceMatrix):
 
         super().__init__(initCov)
 
+        if not isinstance(initCov, IIDCovarianceMatrix):
+            raise ValueError("Adaptive weighting only works with i.i.d. initial covariance matrix.")
+
         self._idleSteps = idleSteps
         self._collectionSteps = collectionSteps
 
         self._nData = 0
-        self._margVar = None
+
+        # relevant quantities for Wellford's variance updates
+        self._mean = np.zeros(initCov.dimension)
+        self._aggSquaredDiff = np.zeros(initCov.dimension)
 
     def update(self):
 
@@ -51,17 +58,35 @@ class AdaptiveWeightingCovarianceMatrix(AdaptiveCovarianceMatrix):
         if not self._update_required(states):
             return
 
+        # the order in lines 55 and 56 is important
         self._nData = len(states)
-        self._margVar = np.var(states, axis=0)
+        self._wellford_update(states)
 
         if nChain > self._idleSteps + self._collectionSteps:
 
             if nChain == self._idleSteps + self._collectionSteps + 1:
                 awCovLogger.info("Start using adaptive covariance.")
 
-            weights = regularised_marginal_variance_weights(self._margVar)
+            if (self._nData < 2):
+                raise ValueError(
+                    "Marginal variance computation requires more than one sample")
+
+            margVar = self._aggSquaredDiff / (self._nData - 1)
+
+            weights = regularised_marginal_variance_weights(margVar)
 
             self._cov.reweight_dimensions(weights)
+
+    def _wellford_update(self, states):
+        """
+        Use Wellford's algorithm for incremental variance updates
+        """
+        newState = states[-1]
+
+        deviation = newState - self._mean
+
+        self._mean += deviation / self._nData
+        self._aggSquaredDiff += deviation * (newState - self._mean)
 
     def _update_required(self, acceptedStates):
 
@@ -87,14 +112,14 @@ class AdaptiveWeightingMetropolis(MetropolisHastings):
             - collectionSteps: Number of steps where samples are collected without updating the covariance.
         """
 
-        adaptiveCovariance = AdaptiveWeightingCovarianceMatrix(initCov, idleSteps, collectionSteps)
+        adaptiveCovariance = AdaptiveWeightingCovarianceMatrix(
+            initCov, idleSteps, collectionSteps)
         proposalMethod = AdaptiveMRWProposal(adaptiveCovariance)
 
         # instantiates self._chain
         super().__init__(targetDensity, proposalMethod)
 
         self._proposalMethod.covariance.set_chain(self._chain)
-
 
     def _acceptance_probability(self, proposal, state):
 
