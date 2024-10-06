@@ -63,6 +63,9 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
     def dimension(self):
         return self.dim_
 
+    def reweight_dimensions(self, weights):
+        raise NotImplementedError("Reweighting dimensions not implemented.")
+
     def apply_chol_factor(self, x):
 
         return self.cholFactor_ @ x

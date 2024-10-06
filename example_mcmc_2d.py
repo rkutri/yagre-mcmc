@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MRWBuilder
-from yagremcmc.chain.method.am import AMBuilder
+from yagremcmc.chain.method.awm import AWMBuilder
 from yagremcmc.parameter.vector import ParameterVector
 
 
-# current options are 'mrw', 'am'
-method = 'am'
+# current options are 'mrw', 'awm'
+method = 'awm'
 
 # current options are 'iid', 'indep'
 mcmcProposal = 'iid'
@@ -33,7 +33,7 @@ elif (mcmcProposal == 'indep'):
 else:
     raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-assert method in ('mrw', 'am')
+assert method in ('mrw', 'awm')
 if method == 'mrw':
 
     chainBuilder = MRWBuilder()
@@ -43,17 +43,16 @@ if method == 'mrw':
 
 else:
 
-    chainBuilder = AMBuilder()
+    chainBuilder = AWMBuilder()
 
     chainBuilder.explicitTarget = tgtDensity
-    chainBuilder.idleSteps = 100
-    chainBuilder.collectionSteps = 200
-    chainBuilder.regularisationParameter = 1e-4
+    chainBuilder.idleSteps = 500
+    chainBuilder.collectionSteps = 2500
     chainBuilder.initialCovariance = proposalCov
 
 mcmc = chainBuilder.build_method()
 
-nSteps = 50000
+nSteps = 10000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 

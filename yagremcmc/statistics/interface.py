@@ -17,6 +17,10 @@ class CovarianceOperatorInterface(ABC):
         pass
 
     @abstractmethod
+    def reweight_dimensions(self, weights):
+        pass
+
+    @abstractmethod
     def apply_chol_factor(self, x):
         pass
 

@@ -1,73 +1,67 @@
-import numpy as np
+from abc import ABC, abstractmethod
 
 from yagremcmc.chain.proposal import ProposalMethod
+from yagremcmc.chain.method.mrw import MRWProposal
+from yagremcmc.statistics.interface import CovarianceOperatorInterface
 
-# TODO: reuse structure from the asm proposal
-class AdaptiveProposal(ProposalMethod):
 
-    def __init__(self, initCov, adaptiveCov, idleSteps):
-        """
-        Parameters:
-        - initCov: Initial covariance matrix to be used during the IDLE phase
-        - adaptiveCov: Adaptive covariance matrix to be used after IDLE phase
-        - idleSteps: Number of steps during which the covariance is not updated
-                     (IDLE phase).
-        """
+class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
 
-        if initCov.dimension == 1:
-            raise NotImplementedError("Adaptivity not implemented for scalar chains.")
+    def __init__(self, initCov):
+
+        self._cov = initCov
+        self._chain = None
+
+    @property
+    def dimension(self):
+        return self._cov.dimension
+
+    def set_chain(self, chain):
+        self._chain = chain
+
+    def reweight_dimensions(self, weights):
+        self._cov.reweight_dimensions(weights)
+
+    def apply_chol_factor(self, x):
+        return self._cov.apply_chol_factor(x)
+
+    def apply_inverse(self, x):
+        return self._cov.apply_inverse(x)
+
+    @property
+    def covariance(self):
+        return self._cov
+
+    @abstractmethod
+    def update(self):
+        pass
+
+
+class AdaptiveMRWProposal(ProposalMethod):
+
+    def __init__(self, adaptiveCov):
+
+        if adaptiveCov.dimension == 1:
+            raise NotImplementedError(
+                "Adaptivity not implemented for scalar chains.")
 
         super().__init__()
 
-        self._proposalMethod = MRWProposal(initCov)
+        self._adaptiveCov = adaptiveCov
 
-        self.iSteps_ = idleSteps
-        self.cSteps_ = collectionSteps
-
-
-    def get_state(self):
-        return self._proposalMethod.get_state()
+        self._proposalMethod = MRWProposal(self._adaptiveCov.covariance)
+    
+    @property
+    def covariance(self):
+        return self._adaptiveCov
 
     def set_state(self, newState):
+
+        self._adaptiveCov.update()
+
+        self._proposalMethod.covariance = self._adaptiveCov.covariance
         self._proposalMethod.set_state(newState)
-
-    @property
-    def chain(self):
-        return self._chain
-
-    @chain.setter
-    def chain(self, newChain):
-        self._chain = newChain
-
-    def _determine_proposal_method(self):
-
-        if self._chain.length < self.iSteps_ + self.cSteps_:
-            assert isinstance(self._proposalMethod, MRWProposal)
-
-        elif self._chain.length == self.iSteps_ + self.cSteps_:
-
-            currentState = self._proposalMethod.get_state()
-
-            self._proposalMethod = AMProposal(
-                self._chain, self.eps_, self.cSteps_)
-            self._proposalMethod.set_state(currentState)
-
-            amLogger.info("Start adaptive covariance")
-
-        elif self._chain.length > self.iSteps_ + self.cSteps_:
-            assert isinstance(self._proposalMethod, AMProposal)
-
-        else:
-            raise RuntimeError("Undefined adaptive Metropolis chain state.")
 
     def generate_proposal(self):
 
-        if self._chain is None:
-            raise ValueError(
-                "Adaptive Proposal is not associated with a chain yet.")
-
-        self._determine_proposal_method()
-
         return self._proposalMethod.generate_proposal()
-
-

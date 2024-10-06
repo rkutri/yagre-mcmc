@@ -134,9 +134,6 @@ class AMProposal(ProposalMethod):
         self._cov.update(self._chain.trajectory[-1])
 
 
-
-
-
 class AdaptiveMetropolis(MetropolisHastings):
     """
     Metropolis-Hastings algorithm with adaptive proposal distribution.
@@ -151,6 +148,8 @@ class AdaptiveMetropolis(MetropolisHastings):
 
     def __init__(self, targetDensity, initCov,
                  idleSteps, collectionSteps, regParam):
+
+        raise NotImplementedError("Use of adaptive Metropolis is deprecated")
 
         proposalMethod = AdaptiveMRWProposal(
             initCov, idleSteps, collectionSteps, regParam)

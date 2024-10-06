@@ -13,7 +13,7 @@ def regularised_marginal_variance_weights(margVar):
 
     regIntensity = np.min([-0.01 + 0.01 * maxEV / minEV, 1.])
 
-    regScaling =  (1. - regIntensity) * margVar + regIntensity * np.eye(dim)
+    regScaling = (1. - regIntensity) * margVar + regIntensity * np.ones(dim)
     maxScale = np.max(regScaling)
 
     return regScaling / maxScale

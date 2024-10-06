@@ -83,14 +83,16 @@ class MetropolisHastings(ABC):
                     if (n == 0):
                         mhLogger.info("Start Markov chain")
                     else:
-                        
-                        mhLogger.info(f"{n} steps computed. Calculating diagnostics.")
+
+                        mhLogger.info(
+                            f"{n} steps computed. Calculating diagnostics.")
 
                         rAccept = \
                             self._chain.diagnostics.rolling_acceptance_rate(
-                            interval)
-                        
-                        mhLogger.info(f"  - rolling acceptance rate: {rAccept}")
+                                interval)
+
+                        mhLogger.info(
+                            f"  - rolling acceptance rate: {rAccept}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
