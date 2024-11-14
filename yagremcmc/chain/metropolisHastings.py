@@ -68,7 +68,8 @@ class MetropolisHastings(ABC):
             isAccepted = 0
             return state, isAccepted
 
-    def run(self, nSteps, initialState, verbose=True, nPrintIntervals=20):
+    def run(self, nSteps, initialState, verbose=True,
+            nPrintIntervals=20, minInterval=10):
 
         self._chain.clear()
         self._chain.append(initialState.coefficient, True)
@@ -78,21 +79,22 @@ class MetropolisHastings(ABC):
         for n in range(nSteps - 1):
 
             if verbose:
-                interval = nSteps // nPrintIntervals
-                if (n % interval == 0):
-                    if (n == 0):
-                        mhLogger.info("Start Markov chain")
-                    else:
 
-                        mhLogger.info(
-                            f"{n} steps computed. Calculating diagnostics.")
+                if (n == 0):
+                    mhLogger.info("Start Markov chain")
 
-                        rAccept = \
-                            self._chain.diagnostics.rolling_acceptance_rate(
-                                interval)
+                interval = max(nSteps // nPrintIntervals, minInterval)
 
-                        mhLogger.info(
-                            f"  - rolling acceptance rate: {rAccept}")
+                if (n % interval == 0 and n > 0):
+
+                    mhLogger.info(
+                        f"{n} steps computed. Calculating diagnostics.")
+
+                    rAccept = \
+                        self._chain.diagnostics.rolling_acceptance_rate(
+                            interval)
+
+                    mhLogger.info(f"  - rolling acceptance rate: {rAccept}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()

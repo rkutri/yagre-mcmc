@@ -37,7 +37,7 @@ class AdaptiveWeightingCovarianceMatrix(AdaptiveCovarianceMatrix):
 
     def update(self):
 
-        if self._chain == None:
+        if self._chain is None:
             raise ValueError("Adaptive covariance not associated with a chain")
 
         nChain = self._chain.length
