@@ -1,20 +1,27 @@
-from numpy import array, average
+import numpy as np
 
 
 class ChainDiagnostics:
 
-    def __init__(self, chain) -> None:
+    def __init__(self) -> None:
 
-        self.decisions_ = []
+        self._decisions = []
+
+    @property
+    def decisions(self):
+        return self._decisions
 
     def add_accepted(self):
-        self.decisions_.append(1)
+        self._decisions.append(1)
 
     def add_rejected(self):
-        self.decisions_.append(0)
+        self._decisions.append(0)
 
     def rolling_acceptance_rate(self, lag):
-        return average(array(self.decisions_[-lag:]))
+        return np.mean(np.array(self._decisions[-lag:]))
 
     def global_acceptance_rate(self):
-        return average(array(self.decisions_))
+        return np.mean(np.array(self._decisions))
+
+    def clear(self):
+        self._decisions = []

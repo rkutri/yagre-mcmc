@@ -4,10 +4,8 @@ from abc import ABC, abstractmethod
 from numpy.random import uniform
 
 from yagremcmc.statistics.interface import DensityInterface
-from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
-from yagremcmc.chain.diagnostics import ChainDiagnostics
 
 # Set up the logger
 mhLogger = logging.getLogger(__name__)
@@ -24,6 +22,7 @@ consoleHandler.setFormatter(formatter)
 # Add the console handler to the mhLogger
 mhLogger.addHandler(consoleHandler)
 
+
 class MetropolisHastings(ABC):
     """
     Template class for Metropolis-Hastings-type chains
@@ -38,7 +37,6 @@ class MetropolisHastings(ABC):
         self._proposalMethod = proposalMethod
 
         self._chain = Chain()
-        self._diagnostics = ChainDiagnostics(self._chain)
 
     @property
     def chain(self):
@@ -47,10 +45,6 @@ class MetropolisHastings(ABC):
     @property
     def target(self):
         return self._tgtDensity
-
-    @property
-    def diagnostics(self):
-        return self._diagnostics
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -66,38 +60,45 @@ class MetropolisHastings(ABC):
 
         if decision <= acceptProb:
 
-            self._diagnostics.add_accepted()
-            return proposal
+            isAccepted = 1
+            return proposal, isAccepted
 
         else:
-            self._diagnostics.add_rejected()
-            return state
 
-    def run(self, nSteps, initialState, verbose=True):
+            isAccepted = 0
+            return state, isAccepted
+
+    def run(self, nSteps, initialState, verbose=True, nPrintIntervals=20):
 
         self._chain.clear()
-        self._chain.append(initialState.coefficient)
+        self._chain.append(initialState.coefficient, True)
 
         state = initialState
 
         for n in range(nSteps - 1):
 
             if verbose:
-                interval = nSteps // 20
+                interval = nSteps // nPrintIntervals
                 if (n % interval == 0):
                     if (n == 0):
                         mhLogger.info("Start Markov chain")
                     else:
-                        ra = self._diagnostics.rolling_acceptance_rate(
-                            interval)
-                        mhLogger.info(f"{n} steps computed")
-                        mhLogger.info(f"  - rolling acceptance rate: {ra}")
+
+                        mhLogger.info(
+                            f"{n} steps computed. Calculating diagnostics.")
+
+                        rAccept = \
+                            self._chain.diagnostics.rolling_acceptance_rate(
+                                interval)
+
+                        mhLogger.info(
+                            f"  - rolling acceptance rate: {rAccept}")
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
 
-            state = self._accept_reject(proposal, state)
+            state, isAccepted = self._accept_reject(proposal, state)
 
-            self._chain.append(state.coefficient)
+            self._chain.append(state.coefficient, isAccepted)
 
         return

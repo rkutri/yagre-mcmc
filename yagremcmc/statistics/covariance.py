@@ -10,33 +10,24 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
 
     Instance Attributes
     -------------------
-    precision_ : numpy.ndarray
+    _precision : numpy.ndarray
         One-dimensional array storing the reciprocals of the diagonal entries of 
         the (diagonal) covariance matrix
     """
 
     def __init__(self, marginalVariances):
 
-        self.precision_ = np.reciprocal(marginalVariances)
-        self.scaling_ = 1.
+        self._precision = np.reciprocal(marginalVariances)
 
     @property
     def dimension(self):
-        return self.precision_.size
-
-    @property
-    def scaling(self):
-        return self.scaling_
-
-    @scaling.setter
-    def scaling(self, value):
-        self.scaling_ = value
+        return self._precision.size
 
     def apply_chol_factor(self, x):
-        return np.sqrt(self.scaling_ * np.reciprocal(self.precision_)) * x
+        return np.sqrt(np.reciprocal(self._precision)) * x
 
     def apply_inverse(self, x):
-        return self.precision_ * x / self.scaling_
+        return self._precision * x
 
 
 class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
@@ -61,19 +52,9 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
 
         self.cholFactor_ = cholesky(denseCovMat, lower=True)
 
-        self.scaling_ = 1.
-
     @property
     def dimension(self):
         return self.dim_
-
-    @property
-    def scaling(self):
-        return self.scaling_
-
-    @scaling.setter
-    def scaling(self, value):
-        self.scaling_ = value
 
     def apply_chol_factor(self, x):
 

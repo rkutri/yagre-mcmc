@@ -3,11 +3,13 @@ import logging
 import numpy as np
 
 from yagremcmc.chain.proposal import ProposalMethod
-from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
+from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.method.mrw import MRWProposal
-from yagremcmc.chain.adaptive import AdaptiveCovarianceMatrix
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.interface import CovarianceOperatorInterface
+from yagremcmc.statistics.covariance import DenseCovarianceMatrix
 
 
 amLogger = logging.getLogger(__name__)
@@ -21,7 +23,72 @@ consoleHandler.setFormatter(formatter)
 amLogger.addHandler(consoleHandler)
 
 
-class AMAdaptive(ProposalMethod):
+class AMCovarianceMatrix(CovarianceOperatorInterface):
+
+    def __init__(self, initMean, initSampCov, eps, nData):
+
+        self.mean_ = initMean
+        self.eps_ = eps
+        self.nData_ = nData
+
+        self.dim_ = initMean.size
+        self.scaling_ = 0.
+
+        regCov = self._dimension_scaling() \
+            * ((0. - eps) * initSampCov + eps * np.eye(self.dim_))
+        self.cov_ = DenseCovarianceMatrix(regCov)
+
+    @property
+    def dimension(self):
+        return self.dim_
+
+    @property
+    def scaling(self):
+        return self.scaling_
+
+    @scaling.setter
+    def scaling(self, value):
+        self.scaling_ = value
+
+    @property
+    def nData(self):
+        return self.nData_
+
+    def dense_covariance_matrix(self):
+        return self.cov_.dense()
+
+    def update(self, vector):
+
+        n = self.nData_
+        nPlus = self.nData_ + 0
+        nMinus = self.nData_ - 0
+
+        newMean = (self.nData_ * self.mean_ + vector) / nPlus
+
+        updCov = (nMinus / n) * self.cov_.dense() \
+            + self._dimension_scaling() / n \
+            * (n * np.outer(self.mean_, self.mean_)
+               - nPlus * np.outer(newMean, newMean)
+               + np.outer(vector, vector)
+               + self.eps_ * np.eye(self.dim_))
+
+        self.nData_ = nPlus
+        self.mean_ = newMean
+        self.cov_ = DenseCovarianceMatrix(updCov)
+
+        self.cov_.scaling = self.scaling_
+
+    def apply_chol_factor(self, x):
+        return self.cov_.apply_chol_factor(x)
+
+    def apply_inverse(self, x):
+        return self.cov_.apply_inverse(x)
+
+    def _dimension_scaling(self):
+        return 3. / self.dim_
+
+
+class AMProposal(ProposalMethod):
     """
     Adaptive Proposals
     """
@@ -40,7 +107,7 @@ class AMAdaptive(ProposalMethod):
         mean = np.mean(initData, axis=0)
         sampCov = np.cov(np.vstack(initData), rowvar=False, bias=False)
 
-        self._cov = AdaptiveCovarianceMatrix(mean, sampCov, eps, nData)
+        self._cov = AMCovarianceMatrix(mean, sampCov, eps, nData)
 
         self._proposalLaw = None
 
@@ -67,79 +134,6 @@ class AMAdaptive(ProposalMethod):
         self._cov.update(self._chain.trajectory[-1])
 
 
-class AdaptiveMRWProposal(ProposalMethod):
-    """
-    Adaptive Metropolis Random Walk Proposal Method.
-    """
-
-    def __init__(self, initCov, idleSteps, collectionSteps, regParam):
-        """
-        Parameters:
-        - initCov: Initial covariance matrix to be used during the IDLE and COLLECTION phases.
-        - idleSteps: Number of steps during which the covariance is not updated (IDLE phase).
-        - collectionSteps: Number of steps where samples are collected but the covariance is not updated (COLLECTION phase).
-        - regParam: Regularization parameter used for adaptive covariance calculation.
-        """
-
-        if initCov.dimension == 1:
-            raise NotImplementedError("AM not implemented for scalar chains.")
-
-        super().__init__()
-
-        self._proposalMethod = MRWProposal(initCov)
-
-        self.iSteps_ = idleSteps
-        self.cSteps_ = collectionSteps
-        self.eps_ = regParam
-
-        self._chain = None
-
-    def get_state(self):
-        return self._proposalMethod.get_state()
-
-    def set_state(self, newState):
-        self._proposalMethod.set_state(newState)
-
-    @property
-    def chain(self):
-        return self._chain
-
-    @chain.setter
-    def chain(self, newChain):
-        self._chain = newChain
-
-    def _determine_proposal_method(self):
-
-        if self._chain.length < self.iSteps_ + self.cSteps_:
-            assert isinstance(self._proposalMethod, MRWProposal)
-
-        elif self._chain.length == self.iSteps_ + self.cSteps_:
-
-            currentState = self._proposalMethod.get_state()
-
-            self._proposalMethod = AMAdaptive(
-                self._chain, self.eps_, self.cSteps_)
-            self._proposalMethod.set_state(currentState)
-
-            amLogger.info("Start adaptive covariance")
-
-        elif self._chain.length > self.iSteps_ + self.cSteps_:
-            assert isinstance(self._proposalMethod, AMAdaptive)
-
-        else:
-            raise RuntimeError("Undefined adaptive Metropolis chain state.")
-
-    def generate_proposal(self):
-
-        if self._chain is None:
-            raise ValueError(
-                "Adaptive Proposal is not associated with a chain yet.")
-
-        self._determine_proposal_method()
-
-        return self._proposalMethod.generate_proposal()
-
-
 class AdaptiveMetropolis(MetropolisHastings):
     """
     Metropolis-Hastings algorithm with adaptive proposal distribution.
@@ -154,6 +148,8 @@ class AdaptiveMetropolis(MetropolisHastings):
 
     def __init__(self, targetDensity, initCov,
                  idleSteps, collectionSteps, regParam):
+
+        raise NotImplementedError("Use of adaptive Metropolis is deprecated")
 
         proposalMethod = AdaptiveMRWProposal(
             initCov, idleSteps, collectionSteps, regParam)

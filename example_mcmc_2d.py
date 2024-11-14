@@ -4,25 +4,25 @@ import matplotlib.pyplot as plt
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MRWBuilder
-from yagremcmc.chain.method.am import AMBuilder
+from yagremcmc.chain.method.awm import AWMBuilder
 from yagremcmc.parameter.vector import ParameterVector
 
 
-# current options are 'mrw', 'am'
-method = 'am'
+# current options are 'mrw', 'awm'
+method = 'awm'
 
 # current options are 'iid', 'indep'
 mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[2.2, -0.5],
-     [-0.5, 0.3]])
+    [[2.4, -0.5],
+     [-0.5, 0.7]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
 
-    proposalMargVar = 0.5
+    proposalMargVar = 1.0
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, proposalMargVar)
 
 elif (mcmcProposal == 'indep'):
@@ -33,7 +33,7 @@ elif (mcmcProposal == 'indep'):
 else:
     raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-assert method in ('mrw', 'am')
+assert method in ('mrw', 'awm')
 if method == 'mrw':
 
     chainBuilder = MRWBuilder()
@@ -43,12 +43,11 @@ if method == 'mrw':
 
 else:
 
-    chainBuilder = AMBuilder()
+    chainBuilder = AWMBuilder()
 
     chainBuilder.explicitTarget = tgtDensity
-    chainBuilder.idleSteps = 100
-    chainBuilder.collectionSteps = 200
-    chainBuilder.regularisationParameter = 1e-4
+    chainBuilder.idleSteps = 5000
+    chainBuilder.collectionSteps = 5000
     chainBuilder.initialCovariance = proposalCov
 
 mcmc = chainBuilder.build_method()
@@ -60,7 +59,7 @@ mcmc.run(nSteps, initState)
 states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
-burnin = int(0.001 * nSteps)
+burnin = 1000
 thinningStep = 8
 
 mcmcSamples = states[burnin::thinningStep]
@@ -72,11 +71,11 @@ meanEst = np.mean(mcmcSamples, axis=0)
 print("true mean: " + str(tgtMean.coefficient))
 print("mean state: " + str(meanState))
 print("mean estimate: " + str(meanEst))
-print("acceptance rate: " + str(mcmc.diagnostics.global_acceptance_rate()))
+print("acceptance rate: " + str(mcmc.chain.diagnostics.global_acceptance_rate()))
 
 # plotting
-xGrid = np.linspace(-8., 8., 200)
-yGrid = np.linspace(-8., 8., 200)
+xGrid = np.linspace(-8., 8., 400)
+yGrid = np.linspace(-8., 8., 400)
 
 # Create a grid for the contour plot
 X, Y = np.meshgrid(xGrid, yGrid)

@@ -1,6 +1,7 @@
 from numpy import exp
 from yagremcmc.chain.proposal import ProposalMethod
-from yagremcmc.chain.metropolisHastings import MetropolisHastings, UnnormalisedPosterior
+from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.statistics.parameterLaw import Gaussian
 
@@ -11,14 +12,22 @@ class MRWProposal(ProposalMethod):
 
         super().__init__()
 
-        self.cov_ = proposalCov
+        self._cov = proposalCov
 
         self.proposalLaw_ = None
+
+    @property
+    def covariance(self):
+        return self._cov
+
+    @covariance.setter
+    def covariance(self, cov):
+        self._cov = cov
 
     def set_state(self, newState):
 
         self._state = newState
-        self.proposalLaw_ = Gaussian(self._state, self.cov_)
+        self.proposalLaw_ = Gaussian(self._state, self._cov)
 
     def generate_proposal(self):
 

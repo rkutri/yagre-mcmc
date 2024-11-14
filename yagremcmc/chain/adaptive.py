@@ -1,69 +1,64 @@
-import numpy as np
+from abc import ABC, abstractmethod
 
+from yagremcmc.chain.proposal import ProposalMethod
+from yagremcmc.chain.method.mrw import MRWProposal
 from yagremcmc.statistics.interface import CovarianceOperatorInterface
-from yagremcmc.statistics.covariance import DenseCovarianceMatrix
 
 
 class AdaptiveCovarianceMatrix(CovarianceOperatorInterface):
 
-    def __init__(self, initMean, initSampCov, eps, nData):
+    def __init__(self, initCov):
 
-        self.mean_ = initMean
-        self.eps_ = eps
-        self.nData_ = nData
-
-        self.dim_ = initMean.size
-        self.scaling_ = 1.
-
-        regCov = self._dimension_scaling() \
-            * ((1. - eps) * initSampCov + eps * np.eye(self.dim_))
-        self.cov_ = DenseCovarianceMatrix(regCov)
+        self._cov = initCov
+        self._chain = None
 
     @property
     def dimension(self):
-        return self.dim_
+        return self._cov.dimension
 
-    @property
-    def scaling(self):
-        return self.scaling_
-
-    @scaling.setter
-    def scaling(self, value):
-        self.scaling_ = value
-
-    @property
-    def nData(self):
-        return self.nData_
-
-    def dense_covariance_matrix(self):
-        return self.cov_.dense()
-
-    def update(self, vector):
-
-        n = self.nData_
-        nPlus = self.nData_ + 1
-        nMinus = self.nData_ - 1
-
-        newMean = (self.nData_ * self.mean_ + vector) / nPlus
-
-        updCov = (nMinus / n) * self.cov_.dense() \
-            + self._dimension_scaling() / n \
-            * (n * np.outer(self.mean_, self.mean_)
-               - nPlus * np.outer(newMean, newMean)
-               + np.outer(vector, vector)
-               + self.eps_ * np.eye(self.dim_))
-
-        self.nData_ = nPlus
-        self.mean_ = newMean
-        self.cov_ = DenseCovarianceMatrix(updCov)
-
-        self.cov_.scaling = self.scaling_
+    def set_chain(self, chain):
+        self._chain = chain
 
     def apply_chol_factor(self, x):
-        return self.cov_.apply_chol_factor(x)
+        return self._cov.apply_chol_factor(x)
 
     def apply_inverse(self, x):
-        return self.cov_.apply_inverse(x)
+        return self._cov.apply_inverse(x)
 
-    def _dimension_scaling(self):
-        return 4. / self.dim_
+    @property
+    def covariance(self):
+        return self._cov
+
+    @abstractmethod
+    def update(self):
+        pass
+
+
+class AdaptiveMRWProposal(ProposalMethod):
+
+    def __init__(self, adaptiveCov):
+
+        if adaptiveCov.dimension == 1:
+            raise NotImplementedError(
+                "Adaptivity not implemented for scalar chains.")
+
+        super().__init__()
+
+        self._adaptiveCov = adaptiveCov
+
+        self._proposalMethod = MRWProposal(self._adaptiveCov.covariance)
+
+    @property
+    def covariance(self):
+        return self._adaptiveCov
+
+    def set_state(self, newState):
+
+        self._adaptiveCov.update()
+
+        self._proposalMethod.covariance = self._adaptiveCov.covariance
+        self._proposalMethod.set_state(newState)
+
+    def generate_proposal(self):
+
+        return self._proposalMethod.generate_proposal()
