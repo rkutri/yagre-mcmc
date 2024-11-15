@@ -3,7 +3,7 @@ from numpy import zeros, sqrt, exp
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.builder import ChainBuilder
-from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.gaussian import Gaussian
 
 
 class PCNProposal(ProposalMethod):

@@ -7,7 +7,7 @@ from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.method.mrw import MRWProposal
 from yagremcmc.chain.builder import ChainBuilder
-from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.interface import CovarianceOperatorInterface
 from yagremcmc.statistics.covariance import DenseCovarianceMatrix
 

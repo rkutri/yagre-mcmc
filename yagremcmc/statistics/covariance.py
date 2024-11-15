@@ -11,7 +11,7 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
     Instance Attributes
     -------------------
     _precision : numpy.ndarray
-        One-dimensional array storing the reciprocals of the diagonal entries of 
+        One-dimensional array storing the reciprocals of the diagonal entries of
         the (diagonal) covariance matrix
     """
 

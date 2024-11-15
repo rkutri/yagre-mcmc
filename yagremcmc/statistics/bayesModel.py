@@ -21,8 +21,10 @@ class BayesianRegressionModel(BayesianModelInterface):
 
     def log_prior(self, parameter):
 
-        return self.prior_.evaluate_log(parameter)
+        # the prior is itself a parameter law
+        return self.prior_.density.evaluate_log(parameter)
 
     def log_likelihood(self, parameter):
 
+        # the likelihood is just the Radon-Nikodym derivative
         return self.likelihood_.evaluate_log(parameter)

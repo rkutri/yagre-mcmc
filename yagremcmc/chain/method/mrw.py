@@ -3,7 +3,7 @@ from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.chain.builder import ChainBuilder
-from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.gaussian import Gaussian
 
 
 class MRWProposal(ProposalMethod):
