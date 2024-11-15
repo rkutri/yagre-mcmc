@@ -5,7 +5,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.chain.method.mrw import MRWBuilder

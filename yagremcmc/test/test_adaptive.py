@@ -31,6 +31,7 @@ def setup_am():
     return mcmc, tgtMean.coefficient, tgtCov
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_mean_estimation(setup_am):
 
     seed(20)
@@ -51,6 +52,7 @@ def test_mean_estimation(setup_am):
         meanEst, trueMean, atol=0.03), f"Estimated mean {meanEst} differs from true mean {trueMean}"
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_covariance_estimation(setup_am):
 
     mcmc, _, trueCov = setup_am
@@ -71,6 +73,7 @@ def test_covariance_estimation(setup_am):
         covEst, trueCov, atol=0.05), f"Estimated covariance\n{covEst}\ndiffers from true covariance\n{trueCov}"
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_acceptance_rate(setup_am):
 
     seed(22)
