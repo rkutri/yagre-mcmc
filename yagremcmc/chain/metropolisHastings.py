@@ -1,26 +1,14 @@
-import logging
-
 from abc import ABC, abstractmethod
 from numpy.random import uniform
 
+from yagremcmc.utility.boilerplate import create_logger
+from yagremcmc.chain.diagnostics import print_diagnostics
 from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
 
-# Set up the logger
-mhLogger = logging.getLogger(__name__)
-mhLogger.setLevel(logging.INFO)
 
-# Create a console handler
-consoleHandler = logging.StreamHandler()
-
-# Set a logging format
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-formatter = logging.Formatter('%(levelname)s: %(message)s')
-consoleHandler.setFormatter(formatter)
-
-# Add the console handler to the mhLogger
-mhLogger.addHandler(consoleHandler)
+mhLogger = create_logger()
 
 
 class MetropolisHastings(ABC):
@@ -88,13 +76,9 @@ class MetropolisHastings(ABC):
                 if (n % interval == 0 and n > 0):
 
                     mhLogger.info(
-                        f"{n} steps computed. Calculating diagnostics.")
+                            f"{n} steps computed. Calculating diagnostics.")
 
-                    rAccept = \
-                        self._chain.diagnostics.rolling_acceptance_rate(
-                            interval)
-
-                    mhLogger.info(f"  - rolling acceptance rate: {rAccept}")
+                    print_diagnostics(mhLogger, self._chain.diagnostics, interval)
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
