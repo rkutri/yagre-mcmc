@@ -10,29 +10,18 @@ from yagremcmc.parameter.vector import ParameterVector
 tgtMeanCoeff = np.array([1., 1.5])
 
 tgtMean = ParameterVector(tgtMeanCoeff)
-# coarseSurrMean = tgtMean
-# fineSurrMean = tgtMean
-
-coarseSurrMean = ParameterVector(tgtMeanCoeff + np.array([-0.05, 0.01]))
-fineSurrMean = ParameterVector(tgtMeanCoeff + np.array([0., -0.01]))
+surrMean = ParameterVector(tgtMeanCoeff + np.array([0.01, -0.03]))
 
 tgtCov = np.array(
     [[2.4, -0.5],
      [-0.5, 0.7]])
 
-#coarseSurrCov = tgtCov
-#fineSurrCov = tgtCov
-
-coarseSurrCov = np.array(
-    [[2.8, -0.1],
-     [-0.1, 1.7]])
-fineSurrCov = np.array(
-    [[2.4, -0.3],
-     [-0.3, 1.1]])
+surrCov = tgtCov + np.array(
+    [[0.2, 0.1],
+     [0.1, 0.2]])
 
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
-coarseSurrDensity = GaussianTargetDensity2d(coarseSurrMean, coarseSurrCov)
-fineSurrDensity = GaussianTargetDensity2d(fineSurrMean, fineSurrCov)
+surrDensity = GaussianTargetDensity2d(surrMean, surrCov)
 
 coarsePropMargVar = 1.
 coarsePropCov = IIDCovarianceMatrix(tgtMean.dimension, coarsePropMargVar)
@@ -40,18 +29,17 @@ coarsePropCov = IIDCovarianceMatrix(tgtMean.dimension, coarsePropMargVar)
 chainBuilder = MLDABuilder()
 
 chainBuilder.explicitTarget = tgtDensity
-chainBuilder.surrogateTargets = [coarseSurrDensity, fineSurrDensity]
+chainBuilder.surrogateTargets = [surrDensity]
 chainBuilder.coarseProposalCovariance = coarsePropCov
-chainBuilder.subChainLengths = [1, 1]
+chainBuilder.subChainLengths = [3]
 
 mcmc = chainBuilder.build_method()
 
-nSteps = 100
+nSteps = 100000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
-print(states)
 
 # postprocessing
 dim = tgtMean.dimension

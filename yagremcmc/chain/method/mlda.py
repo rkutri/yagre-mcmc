@@ -7,7 +7,7 @@ from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.chain.target import UnnormalisedPosterior
 
 
-class SurrogateTransitionProposal(ProposalMethod, MetropolisHastings):
+class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
 
     def __init__(self, targetDensity, proposalMethod, subChainLength):
 
@@ -22,7 +22,7 @@ class SurrogateTransitionProposal(ProposalMethod, MetropolisHastings):
 
     def generate_proposal(self):
 
-        if self.state_ is None:
+        if self._state is None:
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 
@@ -94,16 +94,19 @@ class MLDAProposal(ProposalMethod):
 
     def generate_proposal(self):
 
-        # if the only proposal is the coarse chain
-        if len(self._proposalHierarchy) > 0:
-            return self._proposalHierarchy[-1].generate_proposal()
+        L = len(self._proposalHierarchy)
 
-        else:
-
-            self._baseSurrogateChain.run(self._baseSubChainLength, self._state, verbose=False)
+        # coarse chain is the only surrogate, and thus proposalHierarchy
+        # is empty
+        if L == 0:
+            self._baseSurrogateChain.run(
+                self._baseSubChainLength, self._state, verbose=False)
 
             return self._stateType(
                 self._baseSurrogateChain.chain.trajectory[-1])
+
+        else:
+            return self._proposalHierarchy[-1].generate_proposal()
 
 
 class MLDA(MetropolisHastings):
@@ -113,7 +116,6 @@ class MLDA(MetropolisHastings):
 
         self._finestTarget = surrogateDensities[-1]
 
-        surrogateTgts = surrogateDensities
         proposal = MLDAProposal(
             coarseProposalCov,
             surrogateDensities,

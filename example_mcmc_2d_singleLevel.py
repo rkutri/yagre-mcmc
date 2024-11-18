@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import yagremcmc.postprocessing.autocorrelation as ac
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
@@ -9,7 +10,7 @@ from yagremcmc.parameter.vector import ParameterVector
 
 
 # current options are 'mrw', 'awm'
-method = 'awm'
+method = 'mrw'
 
 # current options are 'iid', 'indep'
 mcmcProposal = 'iid'
@@ -52,15 +53,26 @@ else:
 
 mcmc = chainBuilder.build_method()
 
-nSteps = 50000
+nSteps = 100000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
+dim = tgtMean.dimension
 burnin = 1000
-thinningStep = 8
+
+assert nSteps > burnin
+
+# estimate autocorrelation function
+acf = [ac.estimate_autocorrelation_function_1d(
+    states[burnin:, d]) for d in range(dim)]
+
+meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+
+thinningStep = maxIAT
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -68,10 +80,17 @@ mcmcSamples = states[burnin::thinningStep]
 meanState = np.mean(states, axis=0)
 meanEst = np.mean(mcmcSamples, axis=0)
 
-print("true mean: " + str(tgtMean.coefficient))
-print("mean state: " + str(meanState))
-print("mean estimate: " + str(meanEst))
-print("acceptance rate: " + str(mcmc.chain.diagnostics.global_acceptance_rate()))
+print("\nAnalytics")
+print("---------")
+print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"mean IAT: {meanIAT}")
+print(f"max IAT: {maxIAT}\n")
+
+print("Inference")
+print("---------")
+print(f"true mean: {tgtMean.coefficient}")
+print(f"mean state: {meanState}")
+print(f"mean estimate: {meanEst}")
 
 # plotting
 xGrid = np.linspace(-8., 8., 400)
@@ -111,7 +130,6 @@ if method == 'am':
     plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green',
                 marker='x', s=100, label='start of adaptive covariance')
 
-# Enhance the plot
 plt.title('2D Markov Chain Path with Target Distribution Contours')
 plt.xlabel('X')
 plt.ylabel('Y')
@@ -119,5 +137,24 @@ plt.legend()
 plt.grid(True, which='both', linestyle='--',
          linewidth=0.5, color='gray', alpha=0.7)
 
-# Show the plot
+plt.show()
+
+# plot autocorrelation functions
+plt.title('Autocorrelation Functions')
+plt.xlabel('lag')
+plt.ylabel('estimated correlation')
+
+plt.semilogx(
+    np.arange(1, nSteps + 1 - burnin), acf[0],
+    label="estimated ACF, coordinate 0")
+plt.semilogx(
+    np.arange(1, nSteps + 1 - burnin), acf[1],
+    label="estimated ACF, coordinate 1")
+plt.xlim(1, nSteps + 1 - burnin)
+plt.ylim(-0.15, 1.)
+
+plt.axvline(meanIAT, color='r', linestyle='--', label=f"mean IAT")
+plt.axvline(maxIAT, color='b', linestyle='--', label=f"max IAT")
+plt.legend()
+
 plt.show()
