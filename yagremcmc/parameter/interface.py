@@ -23,7 +23,7 @@ class ParameterInterface(ABC):
 
     @abstractmethod
     def __eq__(self, other):
-        """ 
+        """
         Test for equality. Is used in memoisation of likelihood evaluations.
         """
         pass

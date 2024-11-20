@@ -60,4 +60,3 @@ class Gaussian(AbsolutelyContinuousParameterLaw):
         colouredXi = self._cov.apply_chol_factor(xi)
 
         return self._mean.clone_with(self._mean.coefficient + colouredXi)
-
