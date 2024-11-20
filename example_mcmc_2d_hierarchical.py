@@ -23,10 +23,10 @@ tgtCov = np.array(
 #coarseSurrCov = tgtCov
 #fineSurrCov = tgtCov
 
-coarseSurrCov = np.array(
+coarseSurrCov = 2. * np.array(
     [[2.8, -0.1],
      [-0.1, 1.7]])
-fineSurrCov = np.array(
+fineSurrCov = 1.5 * np.array(
     [[2.4, -0.3],
      [-0.3, 1.1]])
 
@@ -42,11 +42,11 @@ chainBuilder = MLDABuilder()
 chainBuilder.explicitTarget = tgtDensity
 chainBuilder.surrogateTargets = [coarseSurrDensity, fineSurrDensity]
 chainBuilder.coarseProposalCovariance = coarsePropCov
-chainBuilder.subChainLengths = [1, 1]
+chainBuilder.subChainLengths = [8, 4]
 
 mcmc = chainBuilder.build_method()
 
-nSteps = 100
+nSteps = 50000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
@@ -55,7 +55,7 @@ print(states)
 
 # postprocessing
 dim = tgtMean.dimension
-burnin = 1000
+burnin = 500
 
 assert nSteps > burnin
 

@@ -9,7 +9,7 @@ from yagremcmc.chain.target import UnnormalisedPosterior
 
 class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
 
-    def __init__(self, targetDensity, proposalMethod, subChainLength):
+    def __init__(self, targetDensity, proposalMethod, nSteps):
 
         if not isinstance(proposalMethod, MetropolisHastings):
             raise ValueError("Proposal method of surrogate transiton needs"
@@ -18,7 +18,7 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
         MetropolisHastings.__init__(self, targetDensity, proposalMethod)
         ProposalMethod.__init__(self)
 
-        self._subChainLength = subChainLength
+        self._nSteps = nSteps
 
     def generate_proposal(self):
 
@@ -28,7 +28,7 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
 
         # the proposal method of surrogate transition is always itself
         # derived from a Metropolis-Hastings algorithm
-        self._proposalMethod.run(self._subChainLength, self._state)
+        self._proposalMethod.run(self._nSteps + 1, self._state, verbose=False)
 
         return self._stateType(self._proposalMethod.chain.trajectory[-1])
 
@@ -48,7 +48,7 @@ class MLDAProposal(ProposalMethod):
     Represents a composite proposal and is purely a ProposalMethod.
     """
 
-    def __init__(self, coarseProposalCov, surrTgtMeasures, subChainLengths):
+    def __init__(self, coarseProposalCov, surrTgtMeasures, nSteps):
         """
         surrTgtMeasures: DensityInterface
 
@@ -58,12 +58,14 @@ class MLDAProposal(ProposalMethod):
 
         self._nSurrogates = len(surrTgtMeasures)
 
-        assert len(subChainLengths) == self._nSurrogates
+        assert len(nSteps) > 0 and len(nSteps) == self._nSurrogates
 
         # lowest level is just a MRW
-        self._baseSurrogateChain = MetropolisedRandomWalk(
+        self._baseSurrogate = MetropolisedRandomWalk(
             surrTgtMeasures[0], coarseProposalCov)
-        self._baseSubChainLength = subChainLengths[0]
+        # as the chain includes the initial state, the total length is the
+        # number of steps + 1
+        self._baseChainLength = nSteps[0] + 1
 
         self._proposalHierarchy = []
 
@@ -72,9 +74,7 @@ class MLDAProposal(ProposalMethod):
             # proposal for the next level is the MRW on the lowest level
             self._proposalHierarchy.append(
                 SurrogateTransitionProposal(
-                    surrTgtMeasures[1],
-                    self._baseSurrogateChain,
-                    subChainLengths[1]))
+                    surrTgtMeasures[1], self._baseSurrogate, nSteps[1]))
 
         # the remaining levels consist of surrogate transition proposals,
         # where each one uses the next coarser one as its own proposal
@@ -82,7 +82,7 @@ class MLDAProposal(ProposalMethod):
             self._proposalHierarchy.append(
                 SurrogateTransitionProposal(surrTgtMeasures[i],
                                             self._proposalHierarchy[i - 2],
-                                            subChainLengths[i]))
+                                            nSteps[i]))
 
     @property
     def finestSurrogate(self):
@@ -90,7 +90,7 @@ class MLDAProposal(ProposalMethod):
         if self._nSurrogates > 1:
             return self._proposalHierarchy[-1]
         else:
-            return self._baseSurrogateChain
+            return self._baseSurrogate
 
     def generate_proposal(self):
 
@@ -99,27 +99,27 @@ class MLDAProposal(ProposalMethod):
         # coarse chain is the only surrogate, and thus proposalHierarchy
         # is empty
         if L == 0:
-            self._baseSurrogateChain.run(
-                self._baseSubChainLength, self._state, verbose=False)
 
-            return self._stateType(
-                self._baseSurrogateChain.chain.trajectory[-1])
+            self._baseSurrogate.run(
+                self._baseChainLength,
+                self._state,
+                verbose=False)
+            return self._stateType(self._baseSurrogate.chain.trajectory[-1])
 
         else:
+
+            self._proposalHierarchy[-1].set_state(self._state)
             return self._proposalHierarchy[-1].generate_proposal()
 
 
 class MLDA(MetropolisHastings):
 
     def __init__(self, targetDensity, surrogateDensities,
-                 coarseProposalCov, subChainLengths):
+                 coarseProposalCov, nSteps):
 
         self._finestTarget = surrogateDensities[-1]
 
-        proposal = MLDAProposal(
-            coarseProposalCov,
-            surrogateDensities,
-            subChainLengths)
+        proposal = MLDAProposal(coarseProposalCov, surrogateDensities, nSteps)
 
         super().__init__(targetDensity, proposal)
 
@@ -141,7 +141,7 @@ class MLDABuilder(ChainBuilder):
         super().__init__()
 
         self._coarsePropCov = None
-        self._scLengths = None
+        self._nSteps = None
         self._surrTgts = None
 
     @property
@@ -154,11 +154,11 @@ class MLDABuilder(ChainBuilder):
 
     @property
     def subChainLengths(self):
-        return self._scLengths
+        return self._nSteps
 
     @subChainLengths.setter
-    def subChainLengths(self, scLengths):
-        self._scLengths = scLengths
+    def subChainLengths(self, nSteps):
+        self._nSteps = nSteps
 
     @property
     def surrogateTargets(self):
@@ -173,13 +173,13 @@ class MLDABuilder(ChainBuilder):
         if self._coarsePropCov is None:
             raise ValueError("Coarse proposal covariance not set for MLDA")
 
-        if self._scLengths is None:
+        if self._nSteps is None:
             raise ValueError("Subchain lengths not set for MLDA")
 
         if self._surrTgts is None:
             raise ValueError("Surrogate targets not set for MLDA")
 
-        if not len(self._scLengths) == len(self._surrTgts):
+        if not len(self._nSteps) == len(self._surrTgts):
             raise ValueError(
                 "Number of sub-chain lengths does not match number of surrogate targets")
 
@@ -192,11 +192,11 @@ class MLDABuilder(ChainBuilder):
         targetDensity = UnnormalisedPosterior(self._bayesModel)
 
         return MLDA(targetDensity, self._surrTgts,
-                    self.coarsePropCov, self._scLengths)
+                    self.coarsePropCov, self._nSteps)
 
     def build_from_target(self):
 
         self._validate_parameters()
 
         return MLDA(self._explicitTarget, self._surrTgts,
-                    self._coarsePropCov, self._scLengths)
+                    self._coarsePropCov, self._nSteps)
