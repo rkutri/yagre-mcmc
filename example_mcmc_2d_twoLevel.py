@@ -10,27 +10,27 @@ from yagremcmc.parameter.vector import ParameterVector
 tgtMeanCoeff = np.array([1., 1.5])
 
 tgtMean = ParameterVector(tgtMeanCoeff)
-surrMean = ParameterVector(tgtMeanCoeff + np.array([0.01, -0.03]))
+surrMean = ParameterVector(tgtMeanCoeff + np.array([0.15, -0.2]))
 
 tgtCov = np.array(
     [[2.4, -0.5],
      [-0.5, 0.7]])
 
-surrCov = 2. * tgtCov  # + np.array(
-#     [[0.1, 0.01],
-#      [0.01, 0.05]])
+surrCov = 2. * tgtCov + np.array(
+    [[0.1, 1.2],
+     [1.2, 0.05]])
 
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 surrDensity = GaussianTargetDensity2d(surrMean, surrCov)
 
-coarsePropMargVar = 1.
-coarsePropCov = IIDCovarianceMatrix(tgtMean.dimension, coarsePropMargVar)
+basePropMargVar = 1.
+basePropCov = IIDCovarianceMatrix(tgtMean.dimension, basePropMargVar)
 
 chainBuilder = MLDABuilder()
 
 chainBuilder.explicitTarget = tgtDensity
 chainBuilder.surrogateTargets = [surrDensity]
-chainBuilder.coarseProposalCovariance = coarsePropCov
+chainBuilder.baseProposalCovariance = basePropCov
 chainBuilder.subChainLengths = [6]
 
 mcmc = chainBuilder.build_method()
@@ -81,13 +81,16 @@ yGrid = np.linspace(-8., 8., 400)
 # Create a grid for the contour plot
 X, Y = np.meshgrid(xGrid, yGrid)
 mesh = np.dstack((X, Y))
-densityEval = tgtDensity.evaluate_on_mesh(mesh)
+
+tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
+surrDensityEval = surrDensity.evaluate_on_mesh(mesh)
 
 # Plotting
 plt.figure(figsize=(8, 6))
 
 # Plot the contour lines of the target distribution
-plt.contour(X, Y, densityEval, levels=10, cmap='viridis')
+plt.contour(X, Y, tgtDensityEval, levels=5, cmap='Reds')
+plt.contour(X, Y, surrDensityEval, levels=5, cmap='Blues')
 
 # Extract x and y coordinates
 chainX = [state[0] for state in states]
@@ -105,12 +108,8 @@ plt.legend()
 plt.grid(True, which='both', linestyle='--',
          linewidth=0.5, color='gray', alpha=0.7)
 
-plt.plot(chainX[:burnin], chainY[:burnin],
-         color='gray', alpha=0.6, label='burn-in')
-plt.scatter(chainX, chainY, color='red', marker='o', alpha=0.1, s=40,
-            label='mc states')
-plt.scatter(mcmcX, mcmcY, color='blue', marker='o', s=40,
-            alpha=0.5, label='selected samples')
+plt.scatter(mcmcX, mcmcY, color='gray', marker='o', s=40,
+            alpha=0.1, label='selected samples')
 plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
             marker='P', label='mcmc mean estimate')
 

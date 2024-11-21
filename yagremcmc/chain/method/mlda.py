@@ -69,11 +69,9 @@ class MLDAProposal(ProposalMethod):
 
     def generate_proposal(self):
 
-        L = len(self._surrogateHierarchy)
-
         # base chain is the only surrogate, and thus surrogateHierarchy
         # is empty
-        if L == 0:
+        if self._surrogateHierarchy is None:
 
             self._baseSurrogate.run(
                 self._baseChainLength, self._state, verbose=False)
@@ -107,7 +105,7 @@ class MLDAProposal(ProposalMethod):
         for i in range(2, self._nSurrogates):
             hierarchy.append(
                 SurrogateTransitionProposal(surrTgtMeasures[i],
-                                            self._surrogateHierarchy[i - 2],
+                                            hierarchy[i - 2],
                                             nSteps[i]))
 
         return hierarchy

@@ -10,39 +10,39 @@ from yagremcmc.parameter.vector import ParameterVector
 tgtMeanCoeff = np.array([1., 1.5])
 
 tgtMean = ParameterVector(tgtMeanCoeff)
-# coarseSurrMean = tgtMean
+# baseSurrMean = tgtMean
 # fineSurrMean = tgtMean
 
-coarseSurrMean = ParameterVector(tgtMeanCoeff + np.array([-0.05, 0.01]))
+baseSurrMean = ParameterVector(tgtMeanCoeff + np.array([-0.05, 0.01]))
 fineSurrMean = ParameterVector(tgtMeanCoeff + np.array([0., -0.01]))
 
 tgtCov = np.array(
     [[2.4, -0.5],
      [-0.5, 0.7]])
 
-#coarseSurrCov = tgtCov
+#baseSurrCov = tgtCov
 #fineSurrCov = tgtCov
 
-coarseSurrCov = 2. * np.array(
+baseSurrCov = 4. * np.array(
     [[2.8, -0.1],
      [-0.1, 1.7]])
-fineSurrCov = 1.5 * np.array(
+fineSurrCov = 2 * np.array(
     [[2.4, -0.3],
      [-0.3, 1.1]])
 
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
-coarseSurrDensity = GaussianTargetDensity2d(coarseSurrMean, coarseSurrCov)
+baseSurrDensity = GaussianTargetDensity2d(baseSurrMean, baseSurrCov)
 fineSurrDensity = GaussianTargetDensity2d(fineSurrMean, fineSurrCov)
 
-coarsePropMargVar = 1.
-coarsePropCov = IIDCovarianceMatrix(tgtMean.dimension, coarsePropMargVar)
+basePropMargVar = 1.
+basePropCov = IIDCovarianceMatrix(tgtMean.dimension, basePropMargVar)
 
 chainBuilder = MLDABuilder()
 
 chainBuilder.explicitTarget = tgtDensity
-chainBuilder.surrogateTargets = [coarseSurrDensity, fineSurrDensity]
-chainBuilder.coarseProposalCovariance = coarsePropCov
-chainBuilder.subChainLengths = [8, 4]
+chainBuilder.surrogateTargets = [baseSurrDensity, fineSurrDensity]
+chainBuilder.baseProposalCovariance = basePropCov
+chainBuilder.subChainLengths = [4, 4]
 
 mcmc = chainBuilder.build_method()
 
@@ -51,7 +51,6 @@ initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
-print(states)
 
 # postprocessing
 dim = tgtMean.dimension
@@ -93,13 +92,18 @@ yGrid = np.linspace(-8., 8., 400)
 # Create a grid for the contour plot
 X, Y = np.meshgrid(xGrid, yGrid)
 mesh = np.dstack((X, Y))
-densityEval = tgtDensity.evaluate_on_mesh(mesh)
+
+tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
+baseDensityEval = baseSurrDensity.evaluate_on_mesh(mesh)
+fineDensityEval = fineSurrDensity.evaluate_on_mesh(mesh)
 
 # Plotting
 plt.figure(figsize=(8, 6))
 
 # Plot the contour lines of the target distribution
-plt.contour(X, Y, densityEval, levels=10, cmap='viridis')
+plt.contour(X, Y, tgtDensityEval, levels=4, cmap='Reds')
+plt.contour(X, Y, baseDensityEval, levels=4, cmap='Blues')
+plt.contour(X, Y, fineDensityEval, levels=4, cmap='Greens')
 
 # Extract x and y coordinates
 chainX = [state[0] for state in states]
@@ -117,12 +121,8 @@ plt.legend()
 plt.grid(True, which='both', linestyle='--',
          linewidth=0.5, color='gray', alpha=0.7)
 
-plt.plot(chainX[:burnin], chainY[:burnin],
-         color='gray', alpha=0.6, label='burn-in')
-plt.scatter(chainX, chainY, color='red', marker='o', alpha=0.1, s=40,
-            label='mc states')
-plt.scatter(mcmcX, mcmcY, color='blue', marker='o', s=40,
-            alpha=0.5, label='selected samples')
+plt.scatter(mcmcX, mcmcY, color='gray', marker='o', s=40,
+            alpha=0.1, label='selected samples')
 plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
             marker='P', label='mcmc mean estimate')
 
