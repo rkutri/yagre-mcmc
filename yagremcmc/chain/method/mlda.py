@@ -15,8 +15,7 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
             raise ValueError("Proposal method of surrogate transiton needs"
                              " to be derived from MetropolisHastings")
 
-        MetropolisHastings.__init__(self, targetDensity, proposalMethod)
-        ProposalMethod.__init__(self)
+        super().__init__(targetDensity, proposalMethod)
 
         self._nSteps = nSteps
 
@@ -48,7 +47,7 @@ class MLDAProposal(ProposalMethod):
     Represents a composite proposal and is purely a ProposalMethod.
     """
 
-    def __init__(self, coarseProposalCov, surrTgtMeasures, nSteps):
+    def __init__(self, surrTgtMeasures, nSteps, baseProposalCov):
         """
         surrTgtMeasures: DensityInterface
 
@@ -60,66 +59,68 @@ class MLDAProposal(ProposalMethod):
 
         assert len(nSteps) > 0 and len(nSteps) == self._nSurrogates
 
-        # lowest level is just a MRW
-        self._baseSurrogate = MetropolisedRandomWalk(
-            surrTgtMeasures[0], coarseProposalCov)
-        # as the chain includes the initial state, the total length is the
-        # number of steps + 1
-        self._baseChainLength = nSteps[0] + 1
-
-        self._proposalHierarchy = []
+        self._surrogateHierarchy = None
+        self._baseSurrogate = self._build_base_surrogate(
+            surrTgtMeasures[0], nSteps[0], baseProposalCov)
 
         if self._nSurrogates > 1:
-
-            # proposal for the next level is the MRW on the lowest level
-            self._proposalHierarchy.append(
-                SurrogateTransitionProposal(
-                    surrTgtMeasures[1], self._baseSurrogate, nSteps[1]))
-
-        # the remaining levels consist of surrogate transition proposals,
-        # where each one uses the next coarser one as its own proposal
-        for i in range(2, self._nSurrogates):
-            self._proposalHierarchy.append(
-                SurrogateTransitionProposal(surrTgtMeasures[i],
-                                            self._proposalHierarchy[i - 2],
-                                            nSteps[i]))
-
-    @property
-    def finestSurrogate(self):
-
-        if self._nSurrogates > 1:
-            return self._proposalHierarchy[-1]
-        else:
-            return self._baseSurrogate
+            self._surrogateHierarchy = self._build_surrogate_hierarchy(
+                surrTgtMeasures, nSteps)
 
     def generate_proposal(self):
 
-        L = len(self._proposalHierarchy)
+        L = len(self._surrogateHierarchy)
 
-        # coarse chain is the only surrogate, and thus proposalHierarchy
+        # base chain is the only surrogate, and thus surrogateHierarchy
         # is empty
         if L == 0:
 
             self._baseSurrogate.run(
-                self._baseChainLength,
-                self._state,
-                verbose=False)
+                self._baseChainLength, self._state, verbose=False)
+
             return self._stateType(self._baseSurrogate.chain.trajectory[-1])
 
         else:
 
-            self._proposalHierarchy[-1].set_state(self._state)
-            return self._proposalHierarchy[-1].generate_proposal()
+            self._surrogateHierarchy[-1].set_state(self._state)
+            return self._surrogateHierarchy[-1].generate_proposal()
+
+    def _build_base_surrogate(self, tgtDensity, nSteps, propCov):
+
+        # as the chain includes the initial state, the total length is the
+        # number of steps + 1
+        self._baseChainLength = nSteps + 1
+
+        return MetropolisedRandomWalk(tgtDensity, propCov)
+
+    def _build_surrogate_hierarchy(self, surrTgtMeasures, nSteps):
+
+        hierarchy = []
+
+        # proposal for the next level is the MRW on the lowest level
+        hierarchy.append(
+            SurrogateTransitionProposal(
+                surrTgtMeasures[1], self._baseSurrogate, nSteps[1]))
+
+        # the remaining levels consist of surrogate transition proposals,
+        # where each one uses the next baser one as its own proposal
+        for i in range(2, self._nSurrogates):
+            hierarchy.append(
+                SurrogateTransitionProposal(surrTgtMeasures[i],
+                                            self._surrogateHierarchy[i - 2],
+                                            nSteps[i]))
+
+        return hierarchy
 
 
 class MLDA(MetropolisHastings):
 
     def __init__(self, targetDensity, surrogateDensities,
-                 coarseProposalCov, nSteps):
+                 baseProposalCov, nSteps):
 
         self._finestTarget = surrogateDensities[-1]
 
-        proposal = MLDAProposal(coarseProposalCov, surrogateDensities, nSteps)
+        proposal = MLDAProposal(surrogateDensities, nSteps, baseProposalCov)
 
         super().__init__(targetDensity, proposal)
 
@@ -140,17 +141,17 @@ class MLDABuilder(ChainBuilder):
 
         super().__init__()
 
-        self._coarsePropCov = None
+        self._basePropCov = None
         self._nSteps = None
         self._surrTgts = None
 
     @property
-    def coarseProposalCovariance(self):
-        return self._coarsePropCov
+    def baseProposalCovariance(self):
+        return self._basePropCov
 
-    @coarseProposalCovariance.setter
-    def coarseProposalCovariance(self, cov):
-        self._coarsePropCov = cov
+    @baseProposalCovariance.setter
+    def baseProposalCovariance(self, cov):
+        self._basePropCov = cov
 
     @property
     def subChainLengths(self):
@@ -170,7 +171,7 @@ class MLDABuilder(ChainBuilder):
 
     def _validate_parameters(self):
 
-        if self._coarsePropCov is None:
+        if self._basePropCov is None:
             raise ValueError("Coarse proposal covariance not set for MLDA")
 
         if self._nSteps is None:
@@ -192,11 +193,11 @@ class MLDABuilder(ChainBuilder):
         targetDensity = UnnormalisedPosterior(self._bayesModel)
 
         return MLDA(targetDensity, self._surrTgts,
-                    self.coarsePropCov, self._nSteps)
+                    self.basePropCov, self._nSteps)
 
     def build_from_target(self):
 
         self._validate_parameters()
 
         return MLDA(self._explicitTarget, self._surrTgts,
-                    self._coarsePropCov, self._nSteps)
+                    self._basePropCov, self._nSteps)
