@@ -4,7 +4,7 @@ from yagremcmc.utility.memoisation import EvaluationCache
 from yagremcmc.statistics.interface import DensityInterface
 
 
-class AdditiveGaussianNoiseLikelihood(DensityInterface):
+class AdditiveNoiseLikelihood(DensityInterface):
     def __init__(self, data, forwardModel, noiseModel, tempering=1.0):
         """
             Tempering is always applied, however with default parameter 1.0.

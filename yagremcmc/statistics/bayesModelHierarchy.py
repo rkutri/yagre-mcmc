@@ -60,7 +60,7 @@ class BayesianModelHierarchyFactory:
             instances.
         """
         likelihoods = [
-            AdditiveGaussianNoiseLikelihood(
+            AdditiveNoiseLikelihood(
                 self._data.level(k),
                 self._fwdModel.level(k),
                 self._noiseModel.level(k),
