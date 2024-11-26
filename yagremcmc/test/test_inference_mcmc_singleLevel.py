@@ -7,6 +7,7 @@ from numpy.random import seed
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.chain.method.mrw import MRWBuilder
 from yagremcmc.chain.method.pcn import PCNBuilder
@@ -60,7 +61,8 @@ noiseVariance = dataNoiseVariance
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
 # define the statistical inverse problem
-statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
+likelihood = AdditiveNoiseLikelihood(data, fwdModel, noiseModel)
+statModel = BayesianRegressionModel(prior, likelihood)
 
 
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])

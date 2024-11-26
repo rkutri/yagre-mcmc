@@ -49,7 +49,9 @@ def mlda_chain_builder(setup_mlda_test_data):
     data = setup_mlda_test_data
     chainBuilder = MLDABuilder()
     chainBuilder.explicitTarget = data["tgtDensity"]
-    chainBuilder.surrogateTargets = [data["baseSurrDensity"], data["fineSurrDensity"]]
+    chainBuilder.surrogateTargets = [
+        data["baseSurrDensity"],
+        data["fineSurrDensity"]]
     chainBuilder.baseProposalCovariance = data["basePropCov"]
     chainBuilder.subChainLengths = [6, 6]
     return chainBuilder
@@ -137,7 +139,8 @@ def test_mlda_two_level(setup_mlda_test_data):
     # Create a single surrogate density
     surrogateMean = data["tgtMean"] + np.array([0.1, -0.2])
     surrogateCov = 1.5 * np.array([[2.5, -0.3], [-0.3, 0.9]])
-    surrogateDensity = GaussianTargetDensity2d(ParameterVector(surrogateMean), surrogateCov)
+    surrogateDensity = GaussianTargetDensity2d(
+        ParameterVector(surrogateMean), surrogateCov)
 
     basePropCov = data["basePropCov"]
 
@@ -168,13 +171,14 @@ def test_mlda_two_level(setup_mlda_test_data):
     meanEst = np.mean(mcmcSamples, axis=0)
 
     # Assertions
-    assert len(mcmc.chain.trajectory) == nChain, "Chain length mismatch for two-level method."
+    assert len(
+        mcmc.chain.trajectory) == nChain, "Chain length mismatch for two-level method."
 
     assert 0.1 < acceptance_rate < 0.9, \
         f"Acceptance rate {acceptance_rate} for two-level method is outside expected range."
 
     np.testing.assert_allclose(
-        meanEst, data["tgtMean"], atol=0.1, 
+        meanEst, data["tgtMean"], atol=0.1,
         err_msg="Estimated mean from two-level method deviates significantly from target mean."
     )
 
@@ -238,11 +242,11 @@ def test_mlda_five_level_method(setup_mlda_test_data):
     meanEst = np.mean(mcmcSamples, axis=0)
 
     # Assertions
-    assert len(mcmc.chain.trajectory) == nChain, "Chain length mismatch for five-level method."
+    assert len(
+        mcmc.chain.trajectory) == nChain, "Chain length mismatch for five-level method."
     assert 0.1 < acceptance_rate < 0.9, \
         f"Acceptance rate {acceptance_rate} for five-level method is outside expected range."
     np.testing.assert_allclose(
-        meanEst, data["tgtMean"], atol=0.2, 
+        meanEst, data["tgtMean"], atol=0.2,
         err_msg="Estimated mean from five-level method deviates significantly from target mean."
     )
-
