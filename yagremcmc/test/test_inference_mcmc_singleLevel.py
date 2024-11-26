@@ -25,7 +25,14 @@ def check_mean(means, trueParam):
     np.allclose(meanState.coefficient, trueParam.coefficient, atol=2. * MTOL)
 
 
-config = {'T': 6., 'alpha': 0.8, 'gamma': 0.4, 'nData': 5, 'dataDim': 2}
+config = {
+    'T': 6.,
+    'alpha': 0.8,
+    'gamma': 0.4,
+    'nData': 5,
+    'dataDim': 2,
+    'solver': 'LSODA',
+    'rtol': 1e-4}
 design = np.array([
     np.array([0.1, 0.9]),
     np.array([0.5, 0.5]),
