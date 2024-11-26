@@ -1,30 +1,27 @@
-from numpy import exp
 from yagremcmc.statistics.interface import BayesianModelInterface
-from yagremcmc.statistics.likelihood import BayesianRegressionLikelihood
 
 
 class BayesianRegressionModel(BayesianModelInterface):
 
-    def __init__(self, data, prior, forwardModel, noiseModel):
+    def __init__(self, prior, likelihood):
 
-        self.prior_ = prior
-        self.likelihood_ = BayesianRegressionLikelihood(
-            data, forwardModel, noiseModel)
+        self._prior = prior
+        self._likelihood = likelihood
 
     @property
     def prior(self):
-        return self.prior_
+        return self._prior
 
     @property
     def likelihood(self):
-        return self.likelihood_
+        return self._likelihood
 
     def log_prior(self, parameter):
 
         # the prior is itself a parameter law
-        return self.prior_.density.evaluate_log(parameter)
+        return self._prior.density.evaluate_log(parameter)
 
     def log_likelihood(self, parameter):
 
         # the likelihood is just the Radon-Nikodym derivative
-        return self.likelihood_.evaluate_log(parameter)
+        return self._likelihood.evaluate_log(parameter)
