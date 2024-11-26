@@ -66,6 +66,8 @@ class LotkaVolterraSolver(SolverInterface):
         self.tBoundary_ = (0., config['T'])
         self.fixedParam_ = [config['alpha'], config['gamma']]
         self.dataShape_ = (config['nData'], config['dataDim'])
+        self._solverMethod = config['solver']
+        self._solverRTol = config['rtol']
 
         self.param_ = [None, None]
         self.evaluation_ = None
@@ -120,7 +122,7 @@ class LotkaVolterraSolver(SolverInterface):
         for n in range(self.dataShape_[0]):
 
             odeResult = solve_ivp(
-                odeFlow, self.tBoundary_, self.x_[n, :], method='LSODA')
+                odeFlow, self.tBoundary_, self.x_[n, :], method=self._solverMethod, rtol=self._solverRTol)
 
             if (odeResult.status != 0):
 

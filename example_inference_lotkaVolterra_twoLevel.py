@@ -5,17 +5,16 @@ import matplotlib.pyplot as plt
 
 from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
-from yagremcmc.chain.method.mrw import MRWBuilder
-from yagremcmc.chain.method.pcn import PCNBuilder
-from yagremcmc.chain.method.am import AMBuilder
+from yagremcmc.chain.method.mlda import MLDABuilder
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
-from yagremcmc.statistics.bayesModel import BayesianRegressionModel
+from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchyFactory
+from yagremcmc.utility.hierarchy import shared, hierarchical
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation_nd
 
-np.random.seed(1111)
+np.random.seed(1112)
 
 # available options are 'mrw', 'pcn'
 method = 'mrw'
@@ -26,20 +25,31 @@ if method != 'pcn':
     # this will be used as the initial covariance.
     proposalCovType = 'iid'
 
-# define model problem
-config = {
+# define (non-stiff) model problem
+surrogateConfig = {
     'T': 10.,
     'alpha': 0.8,
     'gamma': 0.4,
     'nData': 10,
     'dataDim': 2,
-    'solver': 'LSODA',
-    'rtol': 1e-4}
-design = np.array([uniform(0.5, 1.5, 2) for _ in range(config['nData'])])
+    'solver': 'RK23',
+    'rtol': 1e-2}
+targetConfig = {
+    'T': 10.,
+    'alpha': 0.8,
+    'gamma': 0.4,
+    'nData': 10,
+    'dataDim': 2,
+    'solver': 'DOP853',
+    'rtol': 1e-5}
+design = np.array([uniform(0.5, 1.5, 2) for _ in range(targetConfig['nData'])])
 
 # define forward problem
-solver = setup.LotkaVolterraSolver(design, config)
-fwdModel = ForwardModel(solver)
+surrogateSolver = setup.LotkaVolterraSolver(design, surrogateConfig)
+targetSolver = setup.LotkaVolterraSolver(design, targetConfig)
+
+surrogateModel = ForwardModel(surrogateSolver)
+targetModel = ForwardModel(targetSolver)
 
 # define problem parameters
 parameterDim = 2
@@ -49,7 +59,7 @@ assert groundTruth.dimension == parameterDim
 
 # generate data
 dataNoiseVar = 0.04
-data = setup.generate_synthetic_data(groundTruth, solver, dataNoiseVar)
+data = setup.generate_synthetic_data(groundTruth, targetSolver, dataNoiseVar)
 
 print("synthetic data generated")
 
@@ -66,39 +76,36 @@ prior = Gaussian(priorMean, priorCovariance)
 noiseVariance = dataNoiseVar
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
-# define the statistical inverse problem
-likelihood = AdditiveNoiseLikelihood(data, fwdModel, noiseModel)
-statModel = BayesianRegressionModel(prior, likelihood)
+# define the level hierarchy
+hierarchySize = 2
+dataHierarchy = shared(data, hierarchySize)
+priorHierarchy = shared(prior, hierarchySize)
+modelHierarchy = hierarchical([surrogateModel, targetModel])
+noiseHierarchy = shared(noiseModel, hierarchySize)
+temperingSequence = [0.5, 1.]
 
-# configure the chain setup
-if method == 'pcn':
+modelFactory = BayesianModelHierarchyFactory(
+    dataHierarchy,
+    priorHierarchy,
+    modelHierarchy,
+    noiseHierarchy,
+    temperingSequence)
 
-    chainBuilder = PCNBuilder()
-    chainBuilder.stepSize = 0.01
+statModel = modelFactory.create_model()
 
-elif method == 'mrw':
+# build the chain
+basePropMV = 0.1
+basePropCov = IIDCovarianceMatrix(parameterDim, basePropMV)
 
-    if proposalCovType == 'iid':
-
-        proposalMargVar = 0.15
-        proposalCov = IIDCovarianceMatrix(parameterDim, proposalMargVar)
-
-    elif proposalCovType == 'indep':
-
-        proposalMargVar = np.array([0.02, 0.06])
-        proposalCov = DiagonalCovarianceMatrix(proposalMargVar)
-
-    else:
-        raise ValueError(
-            "Unknown Proposal covariance type: " + proposalCovType)
-
-    chainBuilder = MRWBuilder()
-    chainBuilder.proposalCovariance = proposalCov
-
-else:
-    raise ValueError("Unknown MCMC method: " + method)
+chainBuilder = MLDABuilder()
 
 chainBuilder.bayesModel = statModel
+chainBuilder.baseProposalCovariance = basePropCov
+
+
+chainBuilder.bayesModel = statModel
+chainBuilder.baseProposalCovariance = basePropCov
+chainBuilder.subChainLengths = [3]
 
 sampler = chainBuilder.build_method()
 
@@ -178,12 +185,12 @@ ax[0].legend()
 ax[0].grid(True, which='both', linestyle='--',
            linewidth=0.5, color='gray', alpha=0.7)
 
-trueSol = solver.full_solution(groundTruth, np.array([1., 1.]))
+trueSol = targetSolver.full_solution(groundTruth, np.array([1., 1.]))
 tGridSol = trueSol[0]
 xSol = trueSol[1][0, :]
 ySol = trueSol[1][1, :]
 
-estSol = solver.full_solution(posteriorMean, np.array([1., 1.]))
+estSol = targetSolver.full_solution(posteriorMean, np.array([1., 1.]))
 tGridEst = estSol[0]
 xEst = estSol[1][0, :]
 yEst = estSol[1][1, :]

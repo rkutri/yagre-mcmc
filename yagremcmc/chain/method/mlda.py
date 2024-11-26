@@ -5,6 +5,7 @@ from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
 from yagremcmc.chain.builder import ChainBuilder
 from yagremcmc.chain.target import UnnormalisedPosterior
+from yagremcmc.utility.hierarchy import Hierarchy
 
 
 class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
@@ -169,18 +170,36 @@ class MLDABuilder(ChainBuilder):
 
     def _validate_parameters(self):
 
+        if self._bayesModel is not None:
+
+            if not isinstance(self._bayesModel, Hierarchy):
+                raise ValueError("MLDA requires a hierarchy of models.")
+
+            if self._surrTgts is not None:
+                raise ValueError("Cannot set explicit surrogate targets for "
+                                 "a hierarchy of Bayesian models.")
+
+            if not len(self._nSteps) == self._bayesModel.size - 1:
+                raise ValueError("Number of sub-chain lengths does not match "
+                    "the size of the model hierarchy.")
+
+
+        if self._explicitTarget is not None:
+
+            if self._surrTgts is None:
+                raise ValueError("Surrogate targets not set for MLDA")
+
+            if not len(self._nSteps) == len(self._surrTgts):
+                raise ValueError(
+                    "Number of sub-chain lengths does not match number of "
+                    "surrogate targets")
+
         if self._basePropCov is None:
             raise ValueError("Coarse proposal covariance not set for MLDA")
 
         if self._nSteps is None:
             raise ValueError("Subchain lengths not set for MLDA")
 
-        if self._surrTgts is None:
-            raise ValueError("Surrogate targets not set for MLDA")
-
-        if not len(self._nSteps) == len(self._surrTgts):
-            raise ValueError(
-                "Number of sub-chain lengths does not match number of surrogate targets")
 
         return
 
@@ -188,10 +207,15 @@ class MLDABuilder(ChainBuilder):
 
         self._validate_parameters()
 
-        targetDensity = UnnormalisedPosterior(self._bayesModel)
+        targetDensity = UnnormalisedPosterior(self._bayesModel.target)
 
-        return MLDA(targetDensity, self._surrTgts,
-                    self.basePropCov, self._nSteps)
+        surrogateDensities = []
+
+        for k in range(self._bayesModel.size - 1):
+            surrogateDensities.append(UnnormalisedPosterior(self._bayesModel.level(k)))
+
+        return MLDA(targetDensity, surrogateDensities,
+                    self._basePropCov, self._nSteps)
 
     def build_from_target(self):
 

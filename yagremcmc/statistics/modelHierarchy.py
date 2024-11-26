@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from yagremcmc.utility.hierarchy import Hierarchy, shared, hierarchical
-from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
+from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
 
@@ -51,7 +51,7 @@ class BayesianModelHierarchyFactory:
         self.validate_tempering(temperingSeq)
         self._temperingSeq = temperingSeq
 
-    def create_hierarchy(self):
+    def create_model(self):
         """
         Constructs the hierarchical Bayesian regression model.
 
