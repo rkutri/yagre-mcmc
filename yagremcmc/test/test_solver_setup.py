@@ -11,7 +11,9 @@ config = {
     'alpha': 0.1,
     'gamma': 0.1,
     'nData': 10,
-    'dataDim': 2
+    'dataDim': 2,
+    'solver': 'LSODA',
+    'rtol': 1e-4
 }
 
 # Sample initial conditions

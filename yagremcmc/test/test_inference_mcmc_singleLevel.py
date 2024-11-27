@@ -5,11 +5,12 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.statistics.parameterLaw import Gaussian
+from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
-from yagremcmc.chain.preconditionedCrankNicolson import PCNFactory
+from yagremcmc.chain.method.mrw import MRWBuilder
+from yagremcmc.chain.method.pcn import PCNBuilder
 from yagremcmc.model.forwardModel import ForwardModel
 
 
@@ -24,7 +25,14 @@ def check_mean(means, trueParam):
     np.allclose(meanState.coefficient, trueParam.coefficient, atol=2. * MTOL)
 
 
-config = {'T': 6., 'alpha': 0.8, 'gamma': 0.4, 'nData': 5, 'dataDim': 2}
+config = {
+    'T': 6.,
+    'alpha': 0.8,
+    'gamma': 0.4,
+    'nData': 5,
+    'dataDim': 2,
+    'solver': 'LSODA',
+    'rtol': 1e-4}
 design = np.array([
     np.array([0.1, 0.9]),
     np.array([0.5, 0.5]),
@@ -60,7 +68,8 @@ noiseVariance = dataNoiseVariance
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
 # define the statistical inverse problem
-statModel = BayesianRegressionModel(data, prior, fwdModel, noiseModel)
+likelihood = AdditiveNoiseLikelihood(data, fwdModel, noiseModel)
+statModel = BayesianRegressionModel(prior, likelihood)
 
 
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
@@ -68,7 +77,7 @@ def test_mrw(mcmcProposal):
 
     seed(16)
 
-    chainFactory = MRWFactory()
+    chainBuilder = MRWBuilder()
 
     if (mcmcProposal == 'iid'):
 
@@ -83,10 +92,10 @@ def test_mrw(mcmcProposal):
     else:
         raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-    chainFactory.proposalCovariance = proposalCov
-    chainFactory.bayesModel = statModel
+    chainBuilder.proposalCovariance = proposalCov
+    chainBuilder.bayesModel = statModel
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     # run mcmc
     nSteps = 1000
@@ -112,11 +121,11 @@ def test_pcn():
 
     seed(17)
 
-    chainFactory = PCNFactory()
-    chainFactory.stepSize = 0.001
-    chainFactory.bayesModel = statModel
+    chainBuilder = PCNBuilder()
+    chainBuilder.stepSize = 0.001
+    chainBuilder.bayesModel = statModel
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     # run mcmc
     nSteps = 1000

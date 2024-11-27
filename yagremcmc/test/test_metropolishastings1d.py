@@ -5,7 +5,7 @@ import numpy as np
 from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
-from yagremcmc.chain.metropolisedRandomWalk import MetropolisedRandomWalk
+from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
 from yagremcmc.parameter.scalar import ScalarParameter
 
 
@@ -20,7 +20,7 @@ def test_metropolishastings_initialisation():
 
     mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
 
-    assert isinstance(mc.targetDensity_, type(tgtDensity))
+    assert isinstance(mc.target, type(tgtDensity))
     assert mc.chain.trajectory == []
 
 
@@ -38,7 +38,7 @@ def test_accept_reject():
     state = ScalarParameter.from_value(np.array([2.]))
     proposal = ScalarParameter.from_value(np.array([2.5]))
 
-    acceptedState = mc._accept_reject(proposal, state)
+    acceptedState = mc._accept_reject(proposal, state)[0]
 
     assert acceptedState in [proposal, state]
 

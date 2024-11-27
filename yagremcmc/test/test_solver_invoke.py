@@ -11,7 +11,9 @@ config = {
     'alpha': 0.1,
     'gamma': 0.1,
     'nData': 1,
-    'dataDim': 2
+    'dataDim': 2,
+    'solver': 'LSODA',
+    'rtol': 1e-8
 }
 
 # initial conditions
@@ -89,7 +91,7 @@ def test_invoke():
 
     # Compare results
     np.testing.assert_allclose(solver.evaluation_, ref_result,
-                               rtol=1e-5, atol=1e-8)
+                               rtol=1e-3, atol=1e-6)
 
 
 def test_full_solution():

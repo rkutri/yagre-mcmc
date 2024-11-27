@@ -3,7 +3,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.parameter.vector import ParameterVector
-from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.chain.method.am import AMBuilder
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 
@@ -19,18 +19,19 @@ def setup_am():
 
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, 0.25)
 
-    chainFactory = AMFactory()
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.idleSteps = 100
-    chainFactory.collectionSteps = 500
-    chainFactory.regularisationParameter = 1e-4
-    chainFactory.initialCovariance = proposalCov
+    chainBuilder = AMBuilder()
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.idleSteps = 100
+    chainBuilder.collectionSteps = 500
+    chainBuilder.regularisationParameter = 1e-4
+    chainBuilder.initialCovariance = proposalCov
 
-    mcmc = chainFactory.build_method()
+    mcmc = chainBuilder.build_method()
 
     return mcmc, tgtMean.coefficient, tgtCov
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_mean_estimation(setup_am):
 
     seed(20)
@@ -51,6 +52,7 @@ def test_mean_estimation(setup_am):
         meanEst, trueMean, atol=0.03), f"Estimated mean {meanEst} differs from true mean {trueMean}"
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_covariance_estimation(setup_am):
 
     mcmc, _, trueCov = setup_am
@@ -71,6 +73,7 @@ def test_covariance_estimation(setup_am):
         covEst, trueCov, atol=0.05), f"Estimated covariance\n{covEst}\ndiffers from true covariance\n{trueCov}"
 
 
+@pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
 def test_acceptance_rate(setup_am):
 
     seed(22)
@@ -81,6 +84,6 @@ def test_acceptance_rate(setup_am):
     initState = ParameterVector(trueMean)
     mcmc.run(nSteps, initState)
 
-    acceptanceRate = mcmc.diagnostics.global_acceptance_rate()
+    acceptanceRate = mcmc.chain.diagnostics.global_acceptance_rate()
 
     assert 0.1 <= acceptanceRate <= 0.8, f"Acceptance rate {acceptanceRate} is out of expected range"

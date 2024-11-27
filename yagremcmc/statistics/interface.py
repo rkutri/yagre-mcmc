@@ -9,21 +9,18 @@ class DensityInterface(ABC):
         pass
 
 
+class ParameterLawInterface(ABC):
+
+    @abstractmethod
+    def generate_realisation(self) -> ParameterInterface:
+        pass
+
+
 class CovarianceOperatorInterface(ABC):
 
     @property
     @abstractmethod
     def dimension(self):
-        pass
-
-    @property
-    @abstractmethod
-    def scaling(self):
-        pass
-
-    @scaling.setter
-    @abstractmethod
-    def scaling(self, value):
         pass
 
     @abstractmethod

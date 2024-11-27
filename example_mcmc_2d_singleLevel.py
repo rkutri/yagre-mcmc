@@ -1,28 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import yagremcmc.postprocessing.autocorrelation as ac
 
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
-from yagremcmc.chain.metropolisedRandomWalk import MRWFactory
-from yagremcmc.chain.adaptiveMetropolis import AMFactory
+from yagremcmc.chain.method.mrw import MRWBuilder
+from yagremcmc.chain.method.awm import AWMBuilder
 from yagremcmc.parameter.vector import ParameterVector
 
 
-# current options are 'mrw', 'am'
-method = 'am'
+# current options are 'mrw', 'awm'
+method = 'mrw'
 
 # current options are 'iid', 'indep'
 mcmcProposal = 'iid'
 
 tgtMean = ParameterVector(np.array([1., 1.5]))
 tgtCov = np.array(
-    [[2.2, -0.5],
-     [-0.5, 0.3]])
+    [[2.4, -0.5],
+     [-0.5, 0.7]])
 tgtDensity = GaussianTargetDensity2d(tgtMean, tgtCov)
 
 if (mcmcProposal == 'iid'):
 
-    proposalMargVar = 0.5
+    proposalMargVar = 1.0
     proposalCov = IIDCovarianceMatrix(tgtMean.dimension, proposalMargVar)
 
 elif (mcmcProposal == 'indep'):
@@ -33,35 +34,45 @@ elif (mcmcProposal == 'indep'):
 else:
     raise Exception("Proposal " + mcmcProposal + " not implemented")
 
-assert method in ('mrw', 'am')
+assert method in ('mrw', 'awm')
 if method == 'mrw':
 
-    chainFactory = MRWFactory()
+    chainBuilder = MRWBuilder()
 
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.proposalCovariance = proposalCov
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.proposalCovariance = proposalCov
 
 else:
 
-    chainFactory = AMFactory()
+    chainBuilder = AWMBuilder()
 
-    chainFactory.explicitTarget = tgtDensity
-    chainFactory.idleSteps = 100
-    chainFactory.collectionSteps = 200
-    chainFactory.regularisationParameter = 1e-4
-    chainFactory.initialCovariance = proposalCov
+    chainBuilder.explicitTarget = tgtDensity
+    chainBuilder.idleSteps = 5000
+    chainBuilder.collectionSteps = 5000
+    chainBuilder.initialCovariance = proposalCov
 
-mcmc = chainFactory.build_method()
+mcmc = chainBuilder.build_method()
 
-nSteps = 50000
+nSteps = 100000
 initState = ParameterVector(np.array([-8., -7.]))
 mcmc.run(nSteps, initState)
 
 states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
-burnin = int(0.001 * nSteps)
-thinningStep = 8
+dim = tgtMean.dimension
+burnin = 1000
+
+assert nSteps > burnin
+
+# estimate autocorrelation function
+acf = [ac.estimate_autocorrelation_function_1d(
+    states[burnin:, d]) for d in range(dim)]
+
+meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+
+thinningStep = maxIAT
 
 mcmcSamples = states[burnin::thinningStep]
 
@@ -69,14 +80,21 @@ mcmcSamples = states[burnin::thinningStep]
 meanState = np.mean(states, axis=0)
 meanEst = np.mean(mcmcSamples, axis=0)
 
-print("true mean: " + str(tgtMean.coefficient))
-print("mean state: " + str(meanState))
-print("mean estimate: " + str(meanEst))
-print("acceptance rate: " + str(mcmc.diagnostics.global_acceptance_rate()))
+print("\nAnalytics")
+print("---------")
+print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"mean IAT: {meanIAT}")
+print(f"max IAT: {maxIAT}\n")
+
+print("Inference")
+print("---------")
+print(f"true mean: {tgtMean.coefficient}")
+print(f"mean state: {meanState}")
+print(f"mean estimate: {meanEst}")
 
 # plotting
-xGrid = np.linspace(-8., 8., 200)
-yGrid = np.linspace(-8., 8., 200)
+xGrid = np.linspace(-8., 8., 400)
+yGrid = np.linspace(-8., 8., 400)
 
 # Create a grid for the contour plot
 X, Y = np.meshgrid(xGrid, yGrid)
@@ -108,11 +126,10 @@ plt.scatter(meanEst[0], meanEst[1], color='black', s=100,
             marker='P', label='mcmc mean estimate')
 
 if method == 'am':
-    adaptStart = chainFactory.idleSteps + chainFactory.collectionSteps - 1
+    adaptStart = chainBuilder.idleSteps + chainBuilder.collectionSteps - 1
     plt.scatter(chainX[adaptStart], chainY[adaptStart], color='green',
                 marker='x', s=100, label='start of adaptive covariance')
 
-# Enhance the plot
 plt.title('2D Markov Chain Path with Target Distribution Contours')
 plt.xlabel('X')
 plt.ylabel('Y')
@@ -120,5 +137,24 @@ plt.legend()
 plt.grid(True, which='both', linestyle='--',
          linewidth=0.5, color='gray', alpha=0.7)
 
-# Show the plot
+plt.show()
+
+# plot autocorrelation functions
+plt.title('Autocorrelation Functions')
+plt.xlabel('lag')
+plt.ylabel('estimated correlation')
+
+plt.semilogx(
+    np.arange(1, nSteps + 1 - burnin), acf[0],
+    label="estimated ACF, coordinate 0")
+plt.semilogx(
+    np.arange(1, nSteps + 1 - burnin), acf[1],
+    label="estimated ACF, coordinate 1")
+plt.xlim(1, nSteps + 1 - burnin)
+plt.ylim(-0.15, 1.)
+
+plt.axvline(meanIAT, color='r', linestyle='--', label=f"mean IAT")
+plt.axvline(maxIAT, color='b', linestyle='--', label=f"max IAT")
+plt.legend()
+
 plt.show()

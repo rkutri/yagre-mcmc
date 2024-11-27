@@ -3,7 +3,7 @@ import pytest
 
 from yagremcmc.statistics.data import Data
 from yagremcmc.statistics.interface import NoiseModelInterface
-from yagremcmc.statistics.likelihood import BayesianRegressionLikelihood
+from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.parameter.vector import ParameterVector
 from yagremcmc.utility.memoisation import EvaluationCache
 
@@ -35,7 +35,7 @@ def mock_forward_model():
 
 @pytest.fixture
 def mock_likelihood(mock_data, mock_forward_model, mock_noise):
-    return BayesianRegressionLikelihood(
+    return AdditiveNoiseLikelihood(
         mock_data, mock_forward_model, mock_noise)
 
 
@@ -91,7 +91,7 @@ def test_stress_test_memoisation(mock_noise, mock_forward_model):
     paramSize = 1000
 
     mockData = Data(np.array([[0]]))
-    likelihood = BayesianRegressionLikelihood(
+    likelihood = AdditiveNoiseLikelihood(
         mockData, mock_forward_model, mock_noise)
 
     likelihood.llCache_ = EvaluationCache(cacheSize)
