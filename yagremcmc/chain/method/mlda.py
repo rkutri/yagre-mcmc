@@ -90,10 +90,6 @@ class MLDAProposal(ProposalMethod):
     def depth(self):
         return self._nSurrogates
 
-    @property
-    def surrogateTargets(self):
-        return [self.get_surrogate(i).target for i in range(self._nSurrogates)]
-
     def generate_proposal(self):
 
         # base chain is the only surrogate, and thus surrogateHierarchy
@@ -151,21 +147,6 @@ class MLDA(MetropolisHastings):
 
     def set_subchain_lengths(self, nSteps):
         pass
-
-    def set_tempering_sequence(self, temperingSequence):
-
-        surrogateTargets = self._proposalMethod.surrogateTargets
-
-        if (not isinstance(self._finestTarget, UnnormalisedPosterior) or
-                not all(isinstance(density, UnnormalisedPosterior)
-                        for density in surrogateTargets)):
-            raise ValueError(
-                "Tempering only makes sense if the target represents an "
-                "(unnormalised) posterior."
-            )
-
-        for tIdx in range(self._proposalMethod.depth):
-            surrogateTargets[tIdx].tempering = temperingSequence[tIdx]
 
     def _acceptance_probability(self, proposal, state):
 
@@ -267,3 +248,4 @@ class MLDABuilder(ChainBuilder):
 
         return MLDA(self._explicitTarget, self._surrTgts,
                     self._basePropCov, self._nSteps)
+
