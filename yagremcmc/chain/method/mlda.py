@@ -17,16 +17,7 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
                              " to be derived from MetropolisHastings")
 
         super().__init__(targetDensity, proposalMethod)
-
         self._nSteps = nSteps
-
-    @property
-    def nSteps(self):
-        return self._nSteps
-
-    @nSteps.setter
-    def nSteps(self, steps):
-        self._nSteps = steps
 
     def generate_proposal(self):
 
@@ -76,15 +67,15 @@ class MLDAProposal(ProposalMethod):
             self._surrogateHierarchy = self._build_surrogate_hierarchy(
                 surrTgtMeasures, nSteps)
 
-    def get_surrogate(self, sIdx):
+    def target(self, tIdx):
 
-        if sIdx < 0 or sIdx >= self._nSurrogates:
-            raise ValueError(f"invalid surrogate index: {sIdx}")
+        if tIdx < 0 or tIdx >= self._nSurrogates:
+            raise ValueError(f"invalid target index: {tIdx}")
 
-        if sIdx == 0:
-            return self._baseSurrogate
+        if tIdx == 0:
+            return self._baseSurrogate.target
         else:
-            return self._surrogateHierarchy[sIdx - 1]
+            return self._surrogateHierarchy[sIdx - 1].target
 
     @property
     def depth(self):
@@ -144,9 +135,6 @@ class MLDA(MetropolisHastings):
         proposal = MLDAProposal(surrogateDensities, nSteps, baseProposalCov)
 
         super().__init__(targetDensity, proposal)
-
-    def set_subchain_lengths(self, nSteps):
-        pass
 
     def _acceptance_probability(self, proposal, state):
 
@@ -248,4 +236,3 @@ class MLDABuilder(ChainBuilder):
 
         return MLDA(self._explicitTarget, self._surrTgts,
                     self._basePropCov, self._nSteps)
-
