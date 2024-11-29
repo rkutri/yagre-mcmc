@@ -45,7 +45,7 @@ class MetropolisHastings(ABC):
     def _accept_reject(self, proposal, state):
 
         # acceptance probability is zero, omit evaluation of the likelihood
-        # in __acceptance_probability. The probability of this event is
+        # in __acceptance_probability. The probability of this happening is
         # non-zero in MLDA
         if proposal == state:
             return state, MetropolisHastings.proposalRejected

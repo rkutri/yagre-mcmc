@@ -41,8 +41,10 @@ class Chain:
 
         return [x for x, y in zip(states, decisions) if y == 1]
 
-    def clear(self):
+    def clear_trajectory(self):
 
         self._trajectory = []
+
+    def clear_diagnostics(self):
 
         self._diagnostics.clear()
