@@ -20,6 +20,14 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
 
         self._nSteps = nSteps
 
+    @property
+    def nSteps(self):
+        return self._nSteps
+
+    @nSteps.setter
+    def nSteps(self, steps):
+        self._nSteps = steps
+
     def generate_proposal(self):
 
         if self._state is None:
@@ -67,6 +75,24 @@ class MLDAProposal(ProposalMethod):
         if self._nSurrogates > 1:
             self._surrogateHierarchy = self._build_surrogate_hierarchy(
                 surrTgtMeasures, nSteps)
+
+    def get_surrogate(self, sIdx):
+
+        if sIdx < 0 or sIdx >= self._nSurrogates:
+            raise ValueError(f"invalid surrogate index: {sIdx}")
+
+        if sIdx == 0:
+            return self._baseSurrogate
+        else:
+            return self._surrogateHierarchy[sIdx - 1]
+
+    @property
+    def depth(self):
+        return self._nSurrogates
+
+    @property
+    def surrogateTargets(self):
+        return [self.get_surrogate(i).target for i in range(self._nSurrogates)]
 
     def generate_proposal(self):
 
@@ -122,6 +148,24 @@ class MLDA(MetropolisHastings):
         proposal = MLDAProposal(surrogateDensities, nSteps, baseProposalCov)
 
         super().__init__(targetDensity, proposal)
+
+    def set_subchain_lengths(self, nSteps):
+        pass
+
+    def set_tempering_sequence(self, temperingSequence):
+
+        surrogateTargets = self._proposalMethod.surrogateTargets
+
+        if (not isinstance(self._finestTarget, UnnormalisedPosterior) or
+                not all(isinstance(density, UnnormalisedPosterior)
+                        for density in surrogateTargets)):
+            raise ValueError(
+                "Tempering only makes sense if the target represents an "
+                "(unnormalised) posterior."
+            )
+
+        for tIdx in range(self._proposalMethod.depth):
+            surrogateTargets[tIdx].tempering = temperingSequence[tIdx]
 
     def _acceptance_probability(self, proposal, state):
 
@@ -181,8 +225,7 @@ class MLDABuilder(ChainBuilder):
 
             if not len(self._nSteps) == self._bayesModel.size - 1:
                 raise ValueError("Number of sub-chain lengths does not match "
-                    "the size of the model hierarchy.")
-
+                                 "the size of the model hierarchy.")
 
         if self._explicitTarget is not None:
 
@@ -200,7 +243,6 @@ class MLDABuilder(ChainBuilder):
         if self._nSteps is None:
             raise ValueError("Subchain lengths not set for MLDA")
 
-
         return
 
     def build_from_model(self):
@@ -212,7 +254,9 @@ class MLDABuilder(ChainBuilder):
         surrogateDensities = []
 
         for k in range(self._bayesModel.size - 1):
-            surrogateDensities.append(UnnormalisedPosterior(self._bayesModel.level(k)))
+            surrogateDensities.append(
+                UnnormalisedPosterior(
+                    self._bayesModel.level(k)))
 
         return MLDA(targetDensity, surrogateDensities,
                     self._basePropCov, self._nSteps)

@@ -2,7 +2,9 @@ import pytest
 
 import numpy as np
 
-from yagremcmc.chain.method.mlda import MLDABuilder
+from unittest.mock import MagicMock
+from yagremcmc.chain.method.mlda import MLDA, MLDABuilder
+from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.parameter.vector import ParameterVector

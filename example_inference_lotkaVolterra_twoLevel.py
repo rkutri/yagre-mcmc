@@ -82,14 +82,12 @@ dataHierarchy = shared(data, hierarchySize)
 priorHierarchy = shared(prior, hierarchySize)
 modelHierarchy = hierarchical([surrogateModel, targetModel])
 noiseHierarchy = shared(noiseModel, hierarchySize)
-temperingSequence = [0.5, 1.]
 
 modelFactory = BayesianModelHierarchyFactory(
     dataHierarchy,
     priorHierarchy,
     modelHierarchy,
-    noiseHierarchy,
-    temperingSequence)
+    noiseHierarchy)
 
 statModel = modelFactory.create_model()
 

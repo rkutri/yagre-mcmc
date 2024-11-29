@@ -5,18 +5,11 @@ from yagremcmc.statistics.interface import DensityInterface
 
 
 class AdditiveNoiseLikelihood(DensityInterface):
-    def __init__(self, data, forwardModel, noiseModel, tempering=1.0):
-        """
-            Tempering is always applied, however with default parameter 1.0.
-        """
+    def __init__(self, data, forwardModel, noiseModel):
+
         self.data_ = data
         self.fwdModel_ = forwardModel
         self.noiseModel_ = noiseModel
-
-        if tempering < 0.0 or tempering > 1.0:
-            raise ValueError(f"Invalid tempering parameter value: {tempering}")
-
-        self._tempering = tempering
 
         # Cache for memoized evaluation of likelihood
         cacheSize = 6
@@ -24,13 +17,12 @@ class AdditiveNoiseLikelihood(DensityInterface):
 
     def evaluate_log(self, parameter):
         """
-        Evaluate the tempered log-likelihood.
+        Evaluate the log-likelihood.
 
         Uses memoization for efficiency. If the log-likelihood for the given
         parameter is already cached, it is retrieved from the cache. Otherwise,
         it is computed as:
             logL = -0.5 * ||data - forward_model(parameter)||^2_noise
-        scaled by the tempering factor.
         """
 
         if self.llCache_.contains(parameter):
@@ -43,9 +35,6 @@ class AdditiveNoiseLikelihood(DensityInterface):
         )
 
         logL = -0.5 * np.sum(dmNormSquared)
+        self.llCache_.add(parameter, logL)
 
-        # Apply tempering and cache the tempered result
-        temperedLogL = self._tempering * logL
-        self.llCache_.add(parameter, temperedLogL)
-
-        return temperedLogL
+        return logL

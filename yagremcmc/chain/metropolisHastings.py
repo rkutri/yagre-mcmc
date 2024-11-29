@@ -64,7 +64,7 @@ class MetropolisHastings(ABC):
     def run(self, chainLength, initialState, verbose=True,
             nPrintIntervals=20, minInterval=10):
 
-        self._chain.clear()
+        self._chain.clear_trajectory()
         self._chain.append(initialState.coefficient, True)
 
         state = initialState.clone_with(self._chain.trajectory[0])
