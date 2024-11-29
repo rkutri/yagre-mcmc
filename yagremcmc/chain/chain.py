@@ -48,3 +48,8 @@ class Chain:
     def clear_diagnostics(self):
 
         self._diagnostics.clear()
+
+    def reset(self):
+
+        self.clear_trajectory()
+        self.clear_diagnostics()
