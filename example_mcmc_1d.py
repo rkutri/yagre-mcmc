@@ -34,33 +34,33 @@ states = np.array(mcmc.chain.trajectory)
 # postprocessing
 burnin = int(0.02 * nSteps)
 
-assert nSteps > burnin                                                          
-                                                                                
-# estimate autocorrelation function                                             
+assert nSteps > burnin
+
+# estimate autocorrelation function
 acf = ac.estimate_autocorrelation_function_1d(states[burnin:])
-                                                                                
-meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')             
-maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')               
-                                                                                
-thinningStep = maxIAT                                                           
-                                                                                
-mcmcSamples = states[burnin::thinningStep]                                      
-                                                                                
-# estimate mean                                                                 
-meanState = np.mean(states, axis=0)                                             
-meanEst = np.mean(mcmcSamples, axis=0)                                          
-                                                                                
-print("\nAnalytics")                                                            
-print("---------")                                                              
-print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")       
-print(f"mean IAT: {meanIAT}")                                                   
-print(f"max IAT: {maxIAT}\n")                                                   
-                                                                                
-print("Inference")                                                              
-print("---------")                                                              
-print(f"true mean: {tgtMean.coefficient}")                                      
-print(f"mean state: {meanState}")                                               
-print(f"mean estimate: {meanEst}")       
+
+meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+
+thinningStep = maxIAT
+
+mcmcSamples = states[burnin::thinningStep]
+
+# estimate mean
+meanState = np.mean(states, axis=0)
+meanEst = np.mean(mcmcSamples, axis=0)
+
+print("\nAnalytics")
+print("---------")
+print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
+print(f"mean IAT: {meanIAT}")
+print(f"max IAT: {maxIAT}\n")
+
+print("Inference")
+print("---------")
+print(f"true mean: {tgtMean.coefficient}")
+print(f"mean state: {meanState}")
+print(f"mean estimate: {meanEst}")
 
 plt.hist(states, bins=100, edgecolor='white', alpha=0.4,
          color='red', density=True, label='mc states')

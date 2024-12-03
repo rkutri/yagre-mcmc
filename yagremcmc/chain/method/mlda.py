@@ -11,14 +11,14 @@ from yagremcmc.utility.hierarchy import Hierarchy
 
 class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
 
-    def __init__(self, targetDensity, proposalMethod, nSteps, diagnostics):
+    def __init__(self, targetDensity, proposalMethod, diagnostics, nSteps):
 
         if not isinstance(proposalMethod, MetropolisHastings):
             raise ValueError("Proposal method of surrogate transiton needs"
                              " to be derived from MetropolisHastings")
 
         super().__init__(targetDensity, proposalMethod, diagnostics)
-        self._nSteps = nSteps
+        self._chainLength = nSteps + 1
 
     def generate_proposal(self):
 
@@ -26,9 +26,9 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 
-        # the proposal method of surrogate transition is always itself
-        # derived from a Metropolis-Hastings algorithm
-        self._proposalMethod.run(self._nSteps + 1, self._state, verbose=False)
+        # the proposal method of surrogate transition is always itself derived
+        # from a Metropolis-Hastings algorithm, so it provides a run() method
+        self._proposalMethod.run(self._chainLength, self._state, verbose=False)
 
         return self._stateType(self._proposalMethod.chain.trajectory[-1])
 
@@ -43,90 +43,87 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
         return ratio if ratio < 1. else 1.
 
 
+class SurrogateChainHierarchy(Hierarchy):
+
+    def __init__(self, tgtMeasures, diagnosticsList, basePropCov, nSteps):
+
+        nLevels = len(tgtMeasures)
+
+        if nLevels == 0:
+            raise ValueError("Surrogate hierarchy must contain at least one "
+                             "surrogate.")
+
+        if not len(diagnosticsList) == nLevels:
+            raise ValueError("Mismatch in number of surrogate targets and "
+                             "corresponding chain diagnostics")
+
+        super().__init__(nLevels)
+
+        self._hierarchy = [
+            MetropolisedRandomWalk(
+                tgtMeasures[0],
+                basePropCov,
+                diagnosticsList[0])]
+
+        for level in range(1, nLevels):
+            self._hierarchy.append(SurrogateTransitionProposal(
+                tgtMeasures[level],
+                self._hierarchy[level - 1],
+                diagnosticsList[level],
+                nSteps[level]))
+
+    @property
+    def highest(self):
+        return self._hierarchy[-1]
+
+    def level(self, lvlIdx):
+
+        self.validate_level_index(lvlIdx)
+        return self._hierarchy[lvlIdx]
+
+
 class MLDAProposal(ProposalMethod):
     """
     Represents a composite proposal and is purely a ProposalMethod.
     """
 
-    def __init__(self, surrTgtMeasures, nSteps,
-                 baseProposalCov, diagnosticsList):
-        """
-        surrTgtMeasures: DensityInterface
+    def __init__(self, surrTgtMeasures, surrogateDiagnostics,
+                 baseProposalCov, nSteps):
 
-            Measures to be used as targets for the surrogate transitions. Does
-            not include the final target measure of the entire chain.
-        """
+        self._surrogateHierarchy = SurrogateChainHierarchy(
+            surrTgtMeasures, surrogateDiagnostics, baseProposalCov, nSteps)
 
-        self._nSurrogates = len(surrTgtMeasures)
-
-        assert len(nSteps) > 0 and len(nSteps) == self._nSurrogates
-
-        self._surrogateHierarchy = None
-        self._baseSurrogate = self._build_base_surrogate(
-            surrTgtMeasures[0], nSteps[0], baseProposalCov, diagnosticsList[0])
-
-        if self._nSurrogates > 1:
-            self._surrogateHierarchy = self._build_surrogate_hierarchy(
-                surrTgtMeasures, nSteps, diagnosticsList)
+        self._baseChainLength = nSteps[0] + 1
 
     def target(self, tIdx):
 
-        if tIdx < 0 or tIdx >= self._nSurrogates:
-            raise ValueError(f"invalid target index: {tIdx}")
+        if tIdx < 0 or tIdx >= self._surrogateHierarchy.size:
+            raise IndexError(f"invalid target index: {tIdx}")
 
-        if tIdx == 0:
-            return self._baseSurrogate.target
-        else:
-            return self._surrogateHierarchy[sIdx - 1].target
+        return self._surrogateHierarchy.level(tIdx).target
 
     @property
     def depth(self):
-        return self._nSurrogates
+        return self._surrogateHierarchy.size
 
     def generate_proposal(self):
 
-        # base chain is the only surrogate, and thus surrogateHierarchy
-        # is empty
-        if self._surrogateHierarchy is None:
+        if self.depth == 1:
 
-            self._baseSurrogate.run(
-                self._baseChainLength, self._state, verbose=False)
+            surrogate = self._surrogateHierarchy.level(0)
 
-            return self._stateType(self._baseSurrogate.chain.trajectory[-1])
+            surrogate.run(
+                self._baseChainLength,
+                self._state,
+                verbose=False)
+            return self._stateType(surrogate.chain.trajectory[-1])
 
         else:
 
-            self._surrogateHierarchy[-1].set_state(self._state)
-            return self._surrogateHierarchy[-1].generate_proposal()
+            surrogate = self._surrogateHierarchy.highest
+            surrogate.set_state(self._state)
 
-    def _build_base_surrogate(self, tgtDensity, nSteps, propCov, baseDiagnostics):
-
-        # as the chain includes the initial state, the total length is the
-        # number of steps + 1
-        self._baseChainLength = nSteps + 1
-
-        return MetropolisedRandomWalk(tgtDensity, propCov, baseDiagnostics)
-
-    def _build_surrogate_hierarchy(
-            self, surrTgtMeasures, nSteps, diagnosticsList):
-
-        hierarchy = []
-
-        # proposal for the next level is the MRW on the lowest level
-        hierarchy.append(
-            SurrogateTransitionProposal(
-                surrTgtMeasures[1], self._baseSurrogate, nSteps[1], diagnosticsList[1]))
-
-        # the remaining levels consist of surrogate transition proposals,
-        # where each one uses the next baser one as its own proposal
-        for i in range(2, self._nSurrogates):
-            hierarchy.append(
-                SurrogateTransitionProposal(surrTgtMeasures[i],
-                                            hierarchy[i - 2],
-                                            nSteps[i],
-                                            diagnosticsList[i]))
-
-        return hierarchy
+            return surrogate.generate_proposal()
 
 
 class MLDA(MetropolisHastings):
@@ -137,10 +134,11 @@ class MLDA(MetropolisHastings):
         self._finestTarget = surrogateDensities[-1]
 
         proposal = MLDAProposal(
-            surrogateDensities,
-            nSteps,
-            baseProposalCov,
-            surrogateDiagnosticsList)
+                surrogateDensities,
+                surrogateDiagnosticsList,
+                baseProposalCov,
+                nSteps
+            )
 
         super().__init__(targetDensity, proposal, targetDiagnostics)
 
