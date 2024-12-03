@@ -3,7 +3,7 @@ import numpy as np
 
 from numpy.random import seed
 from yagremcmc.parameter.vector import ParameterVector
-from yagremcmc.chain.method.am import AMBuilder
+from yagremcmc.chain.method.deprecated.am import AMBuilder
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 
