@@ -40,11 +40,11 @@ class MRWProposal(ProposalMethod):
 
 class MetropolisedRandomWalk(MetropolisHastings):
 
-    def __init__(self, targetDensity, proposalCov):
+    def __init__(self, targetDensity, proposalCov, diagnostics):
 
         proposalMethod = MRWProposal(proposalCov)
 
-        super().__init__(targetDensity, proposalMethod)
+        super().__init__(targetDensity, proposalMethod, diagnostics)
 
     def _acceptance_probability(self, proposal, state):
 
@@ -72,17 +72,15 @@ class MRWBuilder(ChainBuilder):
 
     def build_from_model(self) -> MetropolisHastings:
 
-        self._validate_parameters()
-
         targetDensity = UnnormalisedPosterior(self._bayesModel)
 
-        return MetropolisedRandomWalk(targetDensity, self._proposalCov)
+        return MetropolisedRandomWalk(
+            targetDensity, self._proposalCov, self._diagnostics)
 
     def build_from_target(self) -> MetropolisHastings:
 
-        self._validate_parameters()
-
-        return MetropolisedRandomWalk(self._explicitTarget, self._proposalCov)
+        return MetropolisedRandomWalk(
+            self._explicitTarget, self._proposalCov, self._diagnostics)
 
     def _validate_parameters(self) -> None:
 

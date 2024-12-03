@@ -74,7 +74,7 @@ def test_mlda_chain(setup_mlda_test_data, mlda_chain_builder):
 
     # Extract results
     states = np.array(mcmc.chain.trajectory)
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
 
     # Assertions
     assert len(states) == nChain, "Chain length mismatch with expected steps."
@@ -123,7 +123,7 @@ def test_mlda_perfect_surrogate(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
 
     # Assertions
     assert np.abs(diagnostics.global_acceptance_rate() - 1.) < 1e-3, \
@@ -161,7 +161,7 @@ def test_mlda_two_level(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
     acceptance_rate = diagnostics.global_acceptance_rate()
 
     # Postprocessing
@@ -231,7 +231,7 @@ def test_mlda_five_level_method(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
     acceptance_rate = diagnostics.global_acceptance_rate()
 
     # Postprocessing

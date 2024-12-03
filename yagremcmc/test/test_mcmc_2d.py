@@ -5,11 +5,13 @@ from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
+from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
 from yagremcmc.parameter.vector import ParameterVector
 
 
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
-def test_moments(mcmcProposal):
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+def test_moments(mcmcProposal, Diagnostics):
 
     seed(116)
 
@@ -35,7 +37,9 @@ def test_moments(mcmcProposal):
     else:
         raise Exception(f"Proposal {mcmcProposal} not implemented")
 
-    mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+    diagnostics = Diagnostics()
+
+    mcmc = MetropolisedRandomWalk(tgtDensity, proposalCov, diagnostics)
 
     # MCMC run setup
     nSteps = 40000

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
+from yagremcmc.chain.diagnostics import AcceptanceRateDiagnostics
 
 
 class ChainBuilder(ABC):
@@ -9,6 +10,8 @@ class ChainBuilder(ABC):
 
         self._bayesModel = None
         self._explicitTarget = None
+
+        self._diagnostics = AcceptanceRateDiagnostics()
 
     @property
     def bayesModel(self):
@@ -26,6 +29,14 @@ class ChainBuilder(ABC):
     def explicitTarget(self, density):
         self._explicitTarget = density
 
+    @property
+    def diagnostics(self):
+        return self._diagnostics
+
+    @diagnostics.setter
+    def diagnostics(self, diagnostics):
+        self._diagnostics = diagnostics
+
     def validate_target_measure(self):
 
         if self._bayesModel is None and self._explicitTarget is None:
@@ -37,15 +48,9 @@ class ChainBuilder(ABC):
                              + " density should be provided.")
 
     def target_is_posterior(self):
-
-        self.validate_target_measure()
-
         return self._bayesModel is not None
 
     def target_is_explicit(self):
-
-        self.validate_target_measure()
-
         return self._explicitTarget is not None
 
     @abstractmethod
@@ -62,6 +67,7 @@ class ChainBuilder(ABC):
 
     def build_method(self):
 
+        self._validate_parameters()
         self.validate_target_measure()
 
         if self.target_is_posterior():

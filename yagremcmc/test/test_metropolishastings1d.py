@@ -6,10 +6,12 @@ from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
+from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
 from yagremcmc.parameter.scalar import ScalarParameter
 
 
-def test_metropolishastings_initialisation():
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+def test_metropolishastings_initialisation(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([1.]))
     tgtVar = 1.
@@ -18,13 +20,16 @@ def test_metropolishastings_initialisation():
     proposalVariance = 0.5
     proposalCov = IIDCovarianceMatrix(1, proposalVariance)
 
-    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+    diagnostics = Diagnostics()
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov, diagnostics)
 
     assert isinstance(mc.target, type(tgtDensity))
     assert mc.chain.trajectory == []
 
 
-def test_accept_reject():
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+def test_accept_reject(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
     tgtVar = 1.
@@ -33,17 +38,19 @@ def test_accept_reject():
     proposalVariance = 0.5
     proposalCov = IIDCovarianceMatrix(1, proposalVariance)
 
-    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+    diagnostics = Diagnostics()
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov, diagnostics)
 
     state = ScalarParameter.from_value(np.array([2.]))
     proposal = ScalarParameter.from_value(np.array([2.5]))
 
-    acceptedState = mc._accept_reject(proposal, state)[0]
+    transitionOutcome = mc._accept_reject(proposal, state)
 
-    assert acceptedState in [proposal, state]
+    assert transitionOutcome.state in [proposal, state]
 
-
-def test_run_chain():
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+def test_run_chain(Diagnostics):
 
     seed(18)
 
@@ -54,7 +61,9 @@ def test_run_chain():
     proposalVariance = 0.5
     proposalCov = IIDCovarianceMatrix(1, proposalVariance)
 
-    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+    diagnostics = Diagnostics()
+
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov, diagnostics)
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
     tgtVar = 1.
@@ -63,7 +72,7 @@ def test_run_chain():
     proposalVariance = 0.5
     proposalCov = IIDCovarianceMatrix(1, proposalVariance)
 
-    mc = MetropolisedRandomWalk(tgtDensity, proposalCov)
+    mc = MetropolisedRandomWalk(tgtDensity, proposalCov, diagnostics)
 
     nSteps = 15000
     initState = ScalarParameter.from_coefficient(np.array([-3.]))

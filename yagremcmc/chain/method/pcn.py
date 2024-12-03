@@ -37,7 +37,7 @@ class PCNProposal(ProposalMethod):
 
 class PreconditionedCrankNicolson(MetropolisHastings):
 
-    def __init__(self, targetDensity, prior, stepSize):
+    def __init__(self, targetDensity, prior, stepSize, diagnostics):
 
         assert 0 < stepSize and stepSize <= 0.5
 
@@ -47,7 +47,7 @@ class PreconditionedCrankNicolson(MetropolisHastings):
 
         proposalMethod = PCNProposal(prior, stepSize)
 
-        super().__init__(targetDensity, proposalMethod)
+        super().__init__(targetDensity, proposalMethod, diagnostics)
 
     def _acceptance_probability(self, proposal, state):
 
@@ -74,10 +74,8 @@ class PCNBuilder(ChainBuilder):
 
     def build_from_model(self) -> MetropolisHastings:
 
-        self._validate_parameters()
-
         return PreconditionedCrankNicolson(
-            self._bayesModel.likelihood, self._bayesModel.prior, self._stepSize)
+            self._bayesModel.likelihood, self._bayesModel.prior, self._stepSize, self._diagnostics)
 
     def build_from_target(self) -> MetropolisHastings:
 

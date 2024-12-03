@@ -10,7 +10,7 @@ class UnnormalisedPosterior(DensityInterface):
     def evaluate_log(self, parameter):
 
         return self._model.log_likelihood(parameter) + \
-                self._model.log_prior(parameter)
+            self._model.log_prior(parameter)
 
 
 class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
@@ -31,5 +31,4 @@ class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
     def evaluate_log(self, parameter):
 
         return self._tempering * self._model.log_likelihood(parameter) + \
-                self._model.log_prior(parameter)
-
+            self._model.log_prior(parameter)
