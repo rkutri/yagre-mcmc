@@ -64,3 +64,73 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
 
     def clear(self):
         self._decisions = []
+
+
+class MomentsDiagnostics(ChainDiagnostics):
+
+    def __init__(self):
+
+        self._mean = None
+        self._margVar = None
+
+    def update_mean(self, state):
+        pass
+
+    def update_marginal_variance(self, state):
+        """
+        Wellford's algorithm for stable accumulation of variances
+        """
+        pass
+
+    @property
+    def mean(self):
+        return self._mean
+
+    @property
+    def marginalVariance(self):
+        return self._margVar
+
+    @property
+    def conditionNumber(self):
+        return np.max(self._margVar) / np.min(self._margVar)
+
+    def print_diagnostics(self, logger):
+
+        mvCond = self.conditionNumber
+
+        logger.info(f"  - estimated mean: {self.mean}")
+        logger.info(f"  - estimated condition number: {self.conditionNumber}")
+
+    def process(self, transitionData):
+
+        newState = transitionData.state.coefficient
+
+        self.update_mean(newState)
+        self.update_marginal_variance(newState)
+
+    def clear(self):
+
+        self._mean = None
+        self._margVar = None
+
+
+class FullDiagnostics(ChainDiagnostics):
+
+    def __init__(self):
+
+        self._dgns = [AcceptanceDiagnostics(), MomentsDiagnostics()]
+
+    def print_diagnostics(self, logger):
+
+        for dgn in self._dgns:
+            dgn.print_diagnostics(logger)
+
+    def process(self, transitionData):
+
+        for dgn in self._dgns:
+            dgn.process(transitionData)
+
+    def clear(self):
+
+        for dgn in self._dgns:
+            dgn.clear()
