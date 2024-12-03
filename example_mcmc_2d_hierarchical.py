@@ -54,7 +54,7 @@ states = np.array(mcmc.chain.trajectory)
 
 # postprocessing
 dim = tgtMean.dimension
-burnin = 500
+burnin = 100
 
 assert nSteps > burnin
 
@@ -75,7 +75,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 
 print("\nAnalytics")
 print("---------")
-print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
 print(f"mean IAT: {meanIAT}")
 print(f"max IAT: {maxIAT}\n")
 

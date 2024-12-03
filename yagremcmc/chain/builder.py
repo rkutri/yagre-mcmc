@@ -11,6 +11,8 @@ class ChainBuilder(ABC):
         self._bayesModel = None
         self._explicitTarget = None
 
+        # AcceptanceRateDiagnostics provides essentially no overhead and
+        # is the default diagnostics for Markov Chains
         self._diagnostics = AcceptanceRateDiagnostics()
 
     @property

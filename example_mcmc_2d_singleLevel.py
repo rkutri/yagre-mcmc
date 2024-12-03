@@ -5,7 +5,7 @@ import yagremcmc.postprocessing.autocorrelation as ac
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MRWBuilder
-from yagremcmc.chain.method.awm import AWMBuilder
+from yagremcmc.chain.method.deprecated.awm import AWMBuilder
 from yagremcmc.parameter.vector import ParameterVector
 
 
@@ -82,7 +82,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 
 print("\nAnalytics")
 print("---------")
-print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
 print(f"mean IAT: {meanIAT}")
 print(f"max IAT: {maxIAT}\n")
 

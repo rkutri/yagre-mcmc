@@ -19,4 +19,3 @@ class Chain:
 
     def clear(self):
         self._trajectory = []
-

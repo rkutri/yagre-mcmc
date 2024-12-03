@@ -64,7 +64,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 
 print("\nAnalytics")
 print("---------")
-print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
 print(f"mean IAT: {meanIAT}")
 print(f"max IAT: {maxIAT}\n")
 

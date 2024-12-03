@@ -62,7 +62,7 @@ print(f"true mean: {tgtMean.coefficient}")
 print(f"mean state: {meanState}")                                               
 print(f"mean estimate: {meanEst}")       
 
-plt.hist(states, bins=50, edgecolor='white', alpha=0.4,
+plt.hist(states, bins=100, edgecolor='white', alpha=0.4,
          color='red', density=True, label='mc states')
 plt.hist(mcmcSamples, bins=50, edgecolor='black', alpha=0.8,
          color='blue', density=True, label='thinned states')

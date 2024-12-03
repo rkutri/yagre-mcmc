@@ -267,8 +267,6 @@ class MLDABuilder(ChainBuilder):
 
         self.create_diagnostics(nSurrogates)
 
-        print(f"target: {self._tgtDgnst}")
-
         return MLDA(targetDensity,
                     surrogateDensities,
                     self._basePropCov,

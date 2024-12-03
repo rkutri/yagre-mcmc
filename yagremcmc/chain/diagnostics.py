@@ -39,7 +39,10 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
 
         if self._lag is None:
             raise RuntimeError("lag of rolling acceptance rate not set")
-        
+
+        if len(self._decisions) < self._lag:
+            raise RuntimeError("Insufficient data for rolling acceptance rate")
+
         return np.mean(np.array(self._decisions[-self._lag:]))
 
     def global_acceptance_rate(self):

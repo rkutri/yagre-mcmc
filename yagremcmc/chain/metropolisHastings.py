@@ -1,15 +1,12 @@
 from abc import ABC, abstractmethod
 from numpy.random import uniform
 
-from yagremcmc.utility.boilerplate import create_logger
 from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.chain.interface import ChainDiagnostics
 from yagremcmc.chain.transition import TransitionData
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
-
-
-mhLogger = create_logger()
+from yagremcmc.chain.verbosity import VerbosityLevel, VerbosityController
 
 
 class MetropolisHastings(ABC):
@@ -30,6 +27,7 @@ class MetropolisHastings(ABC):
         self._diagnostics = diagnostics
 
         self._chain = Chain()
+        self._verbosityController = VerbosityController()
 
     @property
     def chain(self):
@@ -46,6 +44,13 @@ class MetropolisHastings(ABC):
     @diagnostics.setter
     def diagnostics(self, diagnostics):
         self._diagnostics = diagnostics
+
+    def set_up_verbosity_controller(self, chainLength, verbose):
+
+        if verbose:
+            self._verbosityController.prepare(chainLength, self._diagnostics)
+        else:
+            self._verbosityController.turn_off()
 
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
@@ -71,8 +76,9 @@ class MetropolisHastings(ABC):
         else:
             return TransitionData(state, TransitionData.REJECTED)
 
-    def run(self, chainLength, initialState, verbose=True,
-            nPrintIntervals=20, minInterval=10):
+    def run(self, chainLength, initialState, verbose=True):
+
+        self.set_up_verbosity_controller(chainLength, verbose)
 
         self._chain.clear()
         self._chain.append(initialState.coefficient)
@@ -81,20 +87,7 @@ class MetropolisHastings(ABC):
 
         for n in range(chainLength - 1):
 
-            if verbose:
-
-                if (n == 0):
-                    mhLogger.info("Start Markov chain")
-
-                interval = max(chainLength // nPrintIntervals, minInterval)
-                self._diagnostics.lag = interval
-
-                if (n % interval == 0 and n > 0):
-
-                    mhLogger.info(
-                        f"{n} steps computed. Calculating diagnostics.")
-
-                    self._diagnostics.print_diagnostics(mhLogger)
+            self._verbosityController.run(n)
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
