@@ -9,12 +9,12 @@ from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnost
 from yagremcmc.utility.hierarchy import Hierarchy
 
 
-class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
+class SurrogateTransition(MetropolisHastings, ProposalMethod):
 
     def __init__(self, targetDensity, proposalMethod, diagnostics, nSteps):
 
         if not isinstance(proposalMethod, MetropolisHastings):
-            raise ValueError("Proposal method of surrogate transiton needs"
+            raise ValueError("Proposal method of surrogate transition needs"
                              " to be derived from MetropolisHastings")
 
         super().__init__(targetDensity, proposalMethod, diagnostics)
@@ -43,7 +43,7 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
         return ratio if ratio < 1. else 1.
 
 
-class SurrogateChainHierarchy(Hierarchy):
+class SurrogateHierarchy(Hierarchy):
 
     def __init__(self, tgtMeasures, diagnosticsList, basePropCov, nSteps):
 
@@ -66,7 +66,7 @@ class SurrogateChainHierarchy(Hierarchy):
                 diagnosticsList[0])]
 
         for level in range(1, nLevels):
-            self._hierarchy.append(SurrogateTransitionProposal(
+            self._hierarchy.append(SurrogateTransition(
                 tgtMeasures[level],
                 self._hierarchy[level - 1],
                 diagnosticsList[level],
@@ -87,20 +87,20 @@ class MLDAProposal(ProposalMethod):
     Represents a composite proposal and is purely a ProposalMethod.
     """
 
-    def __init__(self, surrTgtMeasures, surrogateDiagnostics,
+    def __init__(self, surrogateTargets, surrogateDiagnostics,
                  baseProposalCov, nSteps):
 
-        self._surrogateHierarchy = SurrogateChainHierarchy(
-            surrTgtMeasures, surrogateDiagnostics, baseProposalCov, nSteps)
+        self._surrogateHierarchy = SurrogateHierarchy(
+            surrogateTargets, surrogateDiagnostics, baseProposalCov, nSteps)
 
         self._baseChainLength = nSteps[0] + 1
 
-    def target(self, tIdx):
+    def surrogate(self, sIdx):
 
-        if tIdx < 0 or tIdx >= self._surrogateHierarchy.size:
-            raise IndexError(f"invalid target index: {tIdx}")
+        if sIdx < 0 or sIdx >= self._surrogateHierarchy.size:
+            raise IndexError(f"invalid surrogate index: {sIdx}")
 
-        return self._surrogateHierarchy.level(tIdx).target
+        return self._surrogateHierarchy.level(sIdx)
 
     @property
     def nSurrogates(self):
@@ -128,8 +128,9 @@ class MLDAProposal(ProposalMethod):
 
 class MLDA(MetropolisHastings):
 
-    def __init__(self, targetDensity, surrogateDensities,
-                 baseProposalCov, nSteps, targetDiagnostics, surrogateDiagnosticsList):
+    def __init__(
+            self, targetDensity, surrogateDensities, baseProposalCov, nSteps,
+            targetDiagnostics, surrogateDiagnosticsList):
 
         self._finestTarget = surrogateDensities[-1]
 
@@ -141,7 +142,7 @@ class MLDA(MetropolisHastings):
         )
 
         super().__init__(targetDensity, proposal, targetDiagnostics)
-    
+
     @property
     def nSurrogates(self):
         return self._proposalMethod.nSurrogates
@@ -256,6 +257,8 @@ class MLDABuilder(ChainBuilder):
         return
 
     def build_from_model(self):
+
+        self._validate_parameters()
 
         targetDensity = UnnormalisedPosterior(self._bayesModel.target)
 

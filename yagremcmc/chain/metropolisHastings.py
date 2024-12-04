@@ -41,10 +41,6 @@ class MetropolisHastings(ABC):
     def diagnostics(self):
         return self._diagnostics
 
-    @diagnostics.setter
-    def diagnostics(self, diagnostics):
-        self._diagnostics = diagnostics
-
     def set_up_verbosity_controller(self, chainLength, verbose):
 
         if verbose:
@@ -76,6 +72,9 @@ class MetropolisHastings(ABC):
         else:
             return TransitionData(state, TransitionData.REJECTED)
 
+    def _update_chain(self, stateVector):
+        self._chain.append(stateVector)
+
     def run(self, chainLength, initialState, verbose=True):
 
         self.set_up_verbosity_controller(chainLength, verbose)
@@ -96,6 +95,6 @@ class MetropolisHastings(ABC):
             state = transitionOutcome.state
 
             self._diagnostics.process(transitionOutcome)
-            self._chain.append(state.coefficient)
+            self._update_chain(state.coefficient)
 
         return

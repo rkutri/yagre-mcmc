@@ -63,7 +63,7 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
         self._decisions = []
 
 
-class MomentsDiagnostics(ChainDiagnostics):
+class WelfordAccumulator(ChainDiagnostics):
     def __init__(self):
         self._dataSize = 0
         self._mean = None
@@ -133,7 +133,7 @@ class MomentsDiagnostics(ChainDiagnostics):
 class FullDiagnostics(ChainDiagnostics):
 
     def __init__(self):
-        self._diagnostics = [AcceptanceRateDiagnostics(), MomentsDiagnostics()]
+        self._diagnostics = [AcceptanceRateDiagnostics(), WelfordAccumulator()]
         self._lag = None
 
     @property

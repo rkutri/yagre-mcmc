@@ -18,17 +18,12 @@ class Hierarchy(ABC):
 
     def validate_level_index(self, idx):
 
-        if idx < 0 or idx == self._nLevels:
+        if idx < -1 or self._nLevels <= idx:
             raise ValueError(f"invalid level index. Trying to access level "
                              "{idx} in a hierarchy of {self._nLevels} levels.")
 
         else:
             return
-
-    @property
-    @abstractmethod
-    def highest(self):
-        pass
 
     @abstractmethod
     def level(self, lvlIdx):
@@ -42,10 +37,6 @@ class shared(Hierarchy):
         super().__init__(nLevels)
 
         self._sharedComponent = sharedComponent
-
-    @property
-    def highest(self):
-        return self._sharedComponent
 
     def level(self, lvlIdx):
 
@@ -62,11 +53,11 @@ class hierarchical(Hierarchy):
 
         self._hierarchy = hierarchy
 
-    @property
-    def highest(self):
-        return self._hierarchy[-1]
-
     def level(self, lvlIdx):
 
         self.validate_level_index(lvlIdx)
-        return self._hierarchy[lvlIdx]
+
+        if lvlIdx == -1:
+            return self._hierarchy[-1]
+        else:
+            return self._hierarchy[lvlIdx]

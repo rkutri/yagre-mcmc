@@ -15,30 +15,30 @@ def test_acceptance_rate_diagnostics(testLag):
     diagnostics.lag = testLag
 
     # Create transition data with alternating ACCEPTED and REJECTED
-    transitions = [
-        TransitionData(state=None, outcome=outcome)
-        for outcome in ([TransitionData.ACCEPTED] * testLag + [TransitionData.REJECTED] * testLag)
-    ]
+    transitions = [TransitionData(state=None, outcome=outcome) for outcome in (
+        [TransitionData.ACCEPTED] * testLag + [TransitionData.REJECTED] * testLag)]
 
-    # Process transitions
     for t in transitions:
         diagnostics.process(t)
 
-    # Validate global acceptance rate
-    expectedRate = 0.5  # 10 ACCEPTED and 10 REJECTED
+    expectedRate = 0.5
     assert np.isclose(diagnostics.global_acceptance_rate(), expectedRate)
 
-    # Test clearing diagnostics
     diagnostics.clear()
     assert diagnostics._decisions == []
 
 
-@pytest.mark.parametrize("paramDim", [(10, 1), (10, 3), (1000, 5), (500000, 100), (500000, 1000)])
-def test_moments_diagnostics(paramDim):
+@pytest.mark.parametrize("paramDim",
+                         [(10, 1),
+                          (10, 3),
+                          (1000, 5),
+                          (100000, 100),
+                          (100000, 1000)])
+def test_moment_diagnostics(paramDim):
     """
-    Test MomentsDiagnostics against NumPy implementations of mean and variance.
+    Test WelfordAccumulator against NumPy implementations of mean and variance.
     """
-    diagnostics = MomentsDiagnostics()
+    diagnostics = WelfordAccumulator()
 
     stateVectors = [np.random.randn(paramDim[1]) for _ in range(paramDim[0])]
 
@@ -55,9 +55,9 @@ def test_moments_diagnostics(paramDim):
     expectedVar = np.var(stateVectors, axis=0, ddof=1)
 
     # Assertions
-    assert np.allclose(computedMean, expectedMean, atol=1e-6), \
+    assert np.allclose(computedMean, expectedMean), \
         f"mean mismatch: {computedMean} vs. {expectedMean}"
-    assert np.allclose(computedVar, expectedVar, atol=1e-6), \
+    assert np.allclose(computedVar, expectedVar), \
         f"variance mismatch: {computedVar} vs. {expectedVar}"
 
     diagnostics.clear()

@@ -27,7 +27,9 @@ class VerbosityController:
         self._printInterval = max(chainLength // self._nPrintIntervals,
                                   self._minInterval)
 
-        if any([isinstance(diagnostics, dgns) for dgns in [AcceptanceRateDiagnostics, FullDiagnostics]]):
+        if any(
+            [isinstance(diagnostics, dgns)
+             for dgns in [AcceptanceRateDiagnostics, FullDiagnostics]]):
             diagnostics.lag = self._printInterval
 
         self._diagnostics = diagnostics

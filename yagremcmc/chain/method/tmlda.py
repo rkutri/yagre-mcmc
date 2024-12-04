@@ -29,7 +29,9 @@ def validate_tempering_sequence(tSeq, nSurrogates):
             )
 
     for i in range(1, nSurrogates):
-        if tSeq[i - 1] > tSeq[i] and not isclose(tSeq[i - 1], tSeq[i], rel_tol=1e-9):
+        if tSeq[i - 1] > tSeq[i] and not isclose(tSeq[i - 1],
+                                                 tSeq[i],
+                                                 rel_tol=1e-9):
             raise ValueError(
                 f"Non-monotonic tempering sequence at index {i}: "
                 f"{tSeq[i - 1]} > {tSeq[i]}."
@@ -79,12 +81,7 @@ class TemperedMLDABuilder(MLDABuilder):
 
     def _create_tempered_posteriors(self):
 
-        return [
-            TemperedUnnormalisedPosterior(
-                self._bayesModel.level(k), self._temperingSequence[k]
-            )
-            for k in range(self._bayesModel.size - 1)
-        ]
+        return [TemperedUnnormalisedPosterior(self._bayesModel.level(k), self._temperingSequence[k]) for k in range(self._bayesModel.size - 1)]
 
     def build_from_model(self):
         """
@@ -98,12 +95,12 @@ class TemperedMLDABuilder(MLDABuilder):
             self._temperingSequence, self._bayesModel.size - 1
         )
 
-        targetDensity = UnnormalisedPosterior(self._bayesModel.target)
+        targetDensity = UnnormalisedPosterior(self._bayesModel.level(-1))
         surrogateDensities = self._create_tempered_posteriors()
 
         return TemperedMLDA(
-            targetDensity, surrogateDensities, self._basePropCov, self._nSteps, self._temperingSequence
-        )
+            targetDensity, surrogateDensities, self._basePropCov, self._nSteps,
+            self._temperingSequence)
 
     def build_from_target(self):
         raise NotImplementedError(

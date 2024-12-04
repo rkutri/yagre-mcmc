@@ -11,7 +11,9 @@ from yagremcmc.parameter.scalar import ScalarParameter
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
+@pytest.mark.parametrize("Diagnostics",
+                         [DummyDiagnostics, AcceptanceRateDiagnostics,
+                          WelfordAccumulator, FullDiagnostics])
 def test_metropolishastings_initialisation(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([1.]))
@@ -29,7 +31,9 @@ def test_metropolishastings_initialisation(Diagnostics):
     assert mc.chain.trajectory == []
 
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
+@pytest.mark.parametrize("Diagnostics",
+                         [DummyDiagnostics, AcceptanceRateDiagnostics,
+                          WelfordAccumulator, FullDiagnostics])
 def test_accept_reject(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
@@ -51,7 +55,9 @@ def test_accept_reject(Diagnostics):
     assert transitionOutcome.state in [proposal, state]
 
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
+@pytest.mark.parametrize("Diagnostics",
+                         [DummyDiagnostics, AcceptanceRateDiagnostics,
+                          WelfordAccumulator, FullDiagnostics])
 def test_run_chain(Diagnostics):
 
     seed(18)

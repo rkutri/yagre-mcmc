@@ -122,7 +122,8 @@ class LotkaVolterraSolver(SolverInterface):
         for n in range(self.dataShape_[0]):
 
             odeResult = solve_ivp(
-                odeFlow, self.tBoundary_, self.x_[n, :], method=self._solverMethod, rtol=self._solverRTol)
+                odeFlow, self.tBoundary_, self.x_[n, :],
+                method=self._solverMethod, rtol=self._solverRTol)
 
             if (odeResult.status != 0):
 
