@@ -103,12 +103,12 @@ class MLDAProposal(ProposalMethod):
         return self._surrogateHierarchy.level(tIdx).target
 
     @property
-    def depth(self):
+    def nSurrogates(self):
         return self._surrogateHierarchy.size
 
     def generate_proposal(self):
 
-        if self.depth == 1:
+        if self.nSurrogates == 1:
 
             surrogate = self._surrogateHierarchy.level(0)
 
@@ -141,6 +141,10 @@ class MLDA(MetropolisHastings):
         )
 
         super().__init__(targetDensity, proposal, targetDiagnostics)
+    
+    @property
+    def nSurrogates(self):
+        return self._proposalMethod.nSurrogates
 
     def _acceptance_probability(self, proposal, state):
 
