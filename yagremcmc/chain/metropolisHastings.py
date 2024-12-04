@@ -6,7 +6,7 @@ from yagremcmc.chain.interface import ChainDiagnostics
 from yagremcmc.chain.transition import TransitionData
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
-from yagremcmc.chain.verbosity import VerbosityController
+from yagremcmc.utility.verbosity import VerbosityController
 
 
 class MetropolisHastings(ABC):
