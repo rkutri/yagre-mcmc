@@ -1,4 +1,6 @@
 import numpy as np
+
+from collections import deque
 from yagremcmc.chain.interface import ChainDiagnostics
 from yagremcmc.chain.transition import TransitionData
 
@@ -16,6 +18,7 @@ class DummyDiagnostics(ChainDiagnostics):
 
 class AcceptanceRateDiagnostics(ChainDiagnostics):
     def __init__(self):
+
         self._decisions = []
         self._lag = None
 
@@ -25,6 +28,7 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
 
     @lag.setter
     def lag(self, value):
+
         if value <= 0:
             raise ValueError("Lag must be a positive integer.")
         self._lag = value
@@ -65,7 +69,6 @@ class MomentsDiagnostics(ChainDiagnostics):
         self._mean = None
         self._welfordM2 = None
 
-    @property
     def mean(self):
         return self._mean
 
@@ -103,20 +106,23 @@ class MomentsDiagnostics(ChainDiagnostics):
     def condition_number(self):
 
         margVar = self.marginal_variance()
+
+        tol = 1e-12
+        if np.min(margVar) < tol:
+            raise RuntimeError("Singular marginal variance.")
+
         return np.max(margVar) / np.min(margVar)
 
     def process(self, transitionData):
-        stateVector = transitionData.state.coefficient
 
+        stateVector = transitionData.state.coefficient
         self._update(stateVector)
 
     def print_diagnostics(self, logger):
-        try:
-            logger.info(f"  - Estimated mean: {self.mean}")
-            logger.info(
-                f"  - Estimated condition number: {self.condition_number():.4f}")
-        except RuntimeError as e:
-            logger.warning(f"  - Diagnostics unavailable: {e}")
+
+        logger.info(f"  - Estimated mean: {self.mean}")
+        logger.info(
+            f"  - Estimated condition number: {self.condition_number():.4f}")
 
     def clear(self):
         self._dataSize = 0
