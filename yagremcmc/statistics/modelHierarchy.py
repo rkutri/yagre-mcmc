@@ -71,4 +71,3 @@ class BayesianModelHierarchyFactory:
                 f" - {name}: size {size}" for name,
                 size in sizeDict.items())
             raise ValueError(cls.SIZE_MISMATCH_MSG.format(report))
-

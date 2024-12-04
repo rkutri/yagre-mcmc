@@ -35,7 +35,8 @@ def test_tempering_update():
     for i, density in enumerate(surrogateDensities):
         assert density._model.likelihood.tempering == temperingSequence1[i], (
             f"Tempering for surrogate {i} did not update correctly. "
-            f"Expected {temperingSequence1[i]}, got {density._model.likelihood.tempering}."
+            f"Expected {temperingSequence1[i]}, got {
+                density._model.likelihood.tempering}."
         )
 
     # Define a second tempering sequence
@@ -48,7 +49,8 @@ def test_tempering_update():
     for i, density in enumerate(surrogateDensities):
         assert density._model.likelihood.tempering == temperingSequence2[i], (
             f"Tempering for surrogate {i} did not update correctly. "
-            f"Expected {temperingSequence2[i]}, got {density._model.likelihood.tempering}."
+            f"Expected {temperingSequence2[i]}, got {
+                density._model.likelihood.tempering}."
         )
 
     # Edge case: mismatched tempering sequence length

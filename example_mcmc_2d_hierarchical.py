@@ -20,8 +20,8 @@ tgtCov = np.array(
     [[2.4, -0.5],
      [-0.5, 0.7]])
 
-#baseSurrCov = tgtCov
-#fineSurrCov = tgtCov
+# baseSurrCov = tgtCov
+# fineSurrCov = tgtCov
 
 baseSurrCov = 4. * np.array(
     [[2.8, -0.1],
@@ -62,8 +62,8 @@ assert nSteps > burnin
 acf = [ac.estimate_autocorrelation_function_1d(
     states[burnin:, d]) for d in range(dim)]
 
-meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
-maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+meanIAT = ac.integrated_autocorrelation(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation(states[burnin:], 'max')
 
 thinningStep = maxIAT
 

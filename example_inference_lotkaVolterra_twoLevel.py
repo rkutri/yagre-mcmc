@@ -12,7 +12,7 @@ from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchyFactory
 from yagremcmc.utility.hierarchy import shared, hierarchical
-from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation_nd
+from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 np.random.seed(1112)
 
@@ -115,7 +115,7 @@ sampler.run(nSteps, initState)
 states = sampler.chain.trajectory
 
 burnIn = 100
-thinningStep = integrated_autocorrelation_nd(states[burnIn:], 'max')
+thinningStep = integrated_autocorrelation(states[burnIn:], 'max')
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter.from_coefficient(

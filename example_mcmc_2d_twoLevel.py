@@ -51,8 +51,8 @@ assert nSteps > burnin
 acf = [ac.estimate_autocorrelation_function_1d(
     states[burnin:, d]) for d in range(dim)]
 
-meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
-maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+meanIAT = ac.integrated_autocorrelation(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation(states[burnin:], 'max')
 
 thinningStep = maxIAT
 

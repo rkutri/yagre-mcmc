@@ -6,11 +6,12 @@ from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity1d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
-from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
+from yagremcmc.chain.diagnostics import *
 from yagremcmc.parameter.scalar import ScalarParameter
+from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
 def test_metropolishastings_initialisation(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([1.]))
@@ -28,7 +29,7 @@ def test_metropolishastings_initialisation(Diagnostics):
     assert mc.chain.trajectory == []
 
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
 def test_accept_reject(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
@@ -49,7 +50,8 @@ def test_accept_reject(Diagnostics):
 
     assert transitionOutcome.state in [proposal, state]
 
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
 def test_run_chain(Diagnostics):
 
     seed(18)
@@ -84,7 +86,8 @@ def test_run_chain(Diagnostics):
 
     # postprocessing
     burnin = 200
-    thinningStep = 6
+
+    thinningStep = integrated_autocorrelation(states[burnin:], 'max')
 
     mcSamples = states[burnin::thinningStep]
 

@@ -86,4 +86,5 @@ def test_acceptance_rate(setup_am):
 
     acceptanceRate = mcmc.chain.diagnostics.global_acceptance_rate()
 
-    assert 0.1 <= acceptanceRate <= 0.8, f"Acceptance rate {acceptanceRate} is out of expected range"
+    assert 0.1 <= acceptanceRate <= 0.8, f"Acceptance rate {
+        acceptanceRate} is out of expected range"

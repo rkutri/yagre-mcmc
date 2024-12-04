@@ -5,12 +5,12 @@ from numpy.random import seed
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
-from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
+from yagremcmc.chain.diagnostics import *
 from yagremcmc.parameter.vector import ParameterVector
 
 
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
-@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics])
+@pytest.mark.parametrize("Diagnostics", [DummyDiagnostics, AcceptanceRateDiagnostics, MomentsDiagnostics, FullDiagnostics])
 def test_moments(mcmcProposal, Diagnostics):
 
     seed(116)
@@ -65,14 +65,18 @@ def test_moments(mcmcProposal, Diagnostics):
     CTOL = 1e-1
 
     assert np.allclose(meanState, tgtMean.coefficient, atol=MTOL), \
-        f"Mean state does not match target mean with mcmcProposal='{mcmcProposal}'"
+        f"Mean state does not match target mean with mcmcProposal='{
+            mcmcProposal}'"
     assert np.allclose(meanEst, tgtMean.coefficient, atol=MTOL), \
-        f"Mean estimate does not match target mean with mcmcProposal='{mcmcProposal}'"
+        f"Mean estimate does not match target mean with mcmcProposal='{
+            mcmcProposal}'"
 
     assert np.allclose(sampleCov, tgtCov, atol=CTOL), \
-        f"Sample covariance does not match target covariance with mcmcProposal='{mcmcProposal}'"
+        f"Sample covariance does not match target covariance with mcmcProposal='{
+            mcmcProposal}'"
     assert np.allclose(stateCov, tgtCov, atol=2. * CTOL), \
-        f"State covariance does not match target covariance with mcmcProposal='{mcmcProposal}'"
+        f"State covariance does not match target covariance with mcmcProposal='{
+            mcmcProposal}'"
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 from yagremcmc.utility.boilerplate import create_logger
-from yagremcmc.chain.diagnostics import AcceptanceRateDiagnostics
+from yagremcmc.chain.diagnostics import AcceptanceRateDiagnostics, FullDiagnostics
 
 
 class VerbosityLevel:
@@ -27,7 +27,7 @@ class VerbosityController:
         self._printInterval = max(chainLength // self._nPrintIntervals,
                                   self._minInterval)
 
-        if isinstance(diagnostics, AcceptanceRateDiagnostics):
+        if any([isinstance(diagnostics, dgns) for dgns in [AcceptanceRateDiagnostics, FullDiagnostics]]):
             diagnostics.lag = self._printInterval
 
         self._diagnostics = diagnostics

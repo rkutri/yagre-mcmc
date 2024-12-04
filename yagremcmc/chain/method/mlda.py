@@ -134,11 +134,11 @@ class MLDA(MetropolisHastings):
         self._finestTarget = surrogateDensities[-1]
 
         proposal = MLDAProposal(
-                surrogateDensities,
-                surrogateDiagnosticsList,
-                baseProposalCov,
-                nSteps
-            )
+            surrogateDensities,
+            surrogateDiagnosticsList,
+            baseProposalCov,
+            nSteps
+        )
 
         super().__init__(targetDensity, proposal, targetDiagnostics)
 

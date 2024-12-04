@@ -7,13 +7,12 @@ from numpy.random import uniform
 from yagremcmc.model.forwardModel import ForwardModel
 from yagremcmc.chain.method.mrw import MRWBuilder
 from yagremcmc.chain.method.pcn import PCNBuilder
-from yagremcmc.chain.method.am import AMBuilder
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation_nd
+from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 np.random.seed(1111)
 
@@ -110,7 +109,7 @@ sampler.run(nSteps, initState)
 states = sampler.chain.trajectory
 
 burnIn = 100
-thinningStep = integrated_autocorrelation_nd(states[burnIn:], 'max')
+thinningStep = integrated_autocorrelation(states[burnIn:], 'max')
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter.from_coefficient(

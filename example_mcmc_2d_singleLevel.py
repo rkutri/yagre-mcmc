@@ -6,6 +6,7 @@ from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix, DiagonalCovarianceMatrix
 from yagremcmc.chain.method.mrw import MRWBuilder
 from yagremcmc.chain.method.deprecated.awm import AWMBuilder
+from yagremcmc.chain.diagnostics import FullDiagnostics
 from yagremcmc.parameter.vector import ParameterVector
 
 
@@ -41,6 +42,7 @@ if method == 'mrw':
 
     chainBuilder.explicitTarget = tgtDensity
     chainBuilder.proposalCovariance = proposalCov
+    chainBuilder.diagnostics = FullDiagnostics()
 
 else:
 
@@ -69,8 +71,8 @@ assert nSteps > burnin
 acf = [ac.estimate_autocorrelation_function_1d(
     states[burnin:, d]) for d in range(dim)]
 
-meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
-maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+meanIAT = ac.integrated_autocorrelation(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation(states[burnin:], 'max')
 
 thinningStep = maxIAT
 
