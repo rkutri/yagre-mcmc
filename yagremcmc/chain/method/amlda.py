@@ -1,5 +1,5 @@
 from yagremcmc.chain.diagnostics import WelfordAccumulator, FullDiagnostics
-from yagremcmc.chain.target import UnnormalisedPosterior, AdaptivePosterior
+from yagremcmc.chain.target import UnnormalisedPosterior, ErrorCorrectionDecorator
 from yagremcmc.chain.method.mlda import MLDA, MLDABuilder
 
 
@@ -9,14 +9,10 @@ class AdaptiveMLDA(MLDA):
             self, tgtDensity, surrogateTargets, baseProposalCov, nSteps,
             idleSteps, nEstimation):
 
-        if not all(isinstance(tgt, AdaptivePosterior)
-                   for tgt in surrogateTargets):
-            raise ValueError(
-                "Adaptive MLDA Proposals require adaptive posteriors as target.")
-
         targetDiagnostics = FullDiagnostics()
         surrogateDiagnostics = [WelfordAccumulator()
                                 for _ in range(len(surrogateTargets))]
+
         super().__init__(tgtDensity, surrogateTargets, baseProposalCov,
                          nSteps, targetDiagnostics, surrogateDiagnostics)
 
@@ -45,8 +41,8 @@ class AdaptiveMLDA(MLDA):
                 else:
                     tgtAcc = self.diagnostics
 
-                surrogate.target.correction = tgtAcc.mean() - \
-                    surrogate.diagnostics.mean()
+            surrogate.target.correction = surrogate.diagnostics.mean() - \
+                tgtAcc.mean()
 
         super()._update_chain(stateVector)
 
@@ -54,6 +50,8 @@ class AdaptiveMLDA(MLDA):
 class AdaptiveMLDABuilder(MLDABuilder):
 
     def __init__(self):
+
+        print("Initialising Adaptive MLDA builder")
         super().__init__()
 
         self._idleSteps = None
@@ -93,8 +91,15 @@ class AdaptiveMLDABuilder(MLDABuilder):
         self._validate_adaptivity_parameters()
 
     def _create_adaptive_posteriors(self):
-        return [AdaptivePosterior(self._bayesModel.level(k))
+        print("creating adaptive posteriors")
+        return [ErrorCorrectionDecorator(
+                    UnnormalisedPosterior(self._bayesModel.level(k)))
                 for k in range(self._bayesModel.size - 1)]
+
+    def _create_adaptive_densities(self):
+        print("creating adaptive densities")
+
+        return [ErrorCorrectionDecorator(tgtDensity) for tgtDensity in self._surrTgts]
 
     def build_from_model(self):
 
@@ -106,6 +111,8 @@ class AdaptiveMLDABuilder(MLDABuilder):
 
     def build_from_target(self):
 
-        return AdaptiveMLDA(self._explicitTarget, self._surrTgts,
+        surrTgts = self._create_adaptive_densities()
+
+        return AdaptiveMLDA(self._explicitTarget, surrTgts,
                             self._basePropCov, self._nSteps, self._idleSteps,
                             self._nEstimation)

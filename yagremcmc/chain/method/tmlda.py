@@ -40,7 +40,8 @@ def validate_tempering_sequence(tSeq, nSurrogates):
 
 class TemperedMLDA(MLDA):
 
-    def __init__(self, targetDensity, surrogateDensities, basePropCov, nSteps, tSeq):
+    def __init__(self, targetDensity, surrogateDensities,
+                 basePropCov, nSteps, tSeq):
 
         super().__init__(targetDensity, surrogateDensities, basePropCov, nSteps)
 
@@ -81,7 +82,8 @@ class TemperedMLDABuilder(MLDABuilder):
 
     def _create_tempered_posteriors(self):
 
-        return [TemperedUnnormalisedPosterior(self._bayesModel.level(k), self._temperingSequence[k]) for k in range(self._bayesModel.size - 1)]
+        return [TemperedUnnormalisedPosterior(self._bayesModel.level(
+            k), self._temperingSequence[k]) for k in range(self._bayesModel.size - 1)]
 
     def build_from_model(self):
         """

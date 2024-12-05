@@ -42,7 +42,8 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
         return np.sum(self._decisions[-self._lag:]) / self._lag
 
     def global_acceptance_rate(self):
-        return np.sum(self._decisions) / len(self._decisions) if self._decisions else 0.0
+        return np.sum(self._decisions) / \
+            len(self._decisions) if self._decisions else 0.0
 
     def process(self, transition_data):
         if transition_data.outcome == TransitionData.REJECTED:
@@ -120,7 +121,7 @@ class WelfordAccumulator(ChainDiagnostics):
 
     def print_diagnostics(self, logger):
 
-        logger.info(f"  - Estimated mean: {self.mean}")
+        logger.info(f"  - Estimated mean: {self.mean()}")
         logger.info(
             f"  - Estimated condition number: {self.condition_number():.4f}")
 
@@ -152,7 +153,7 @@ class FullDiagnostics(ChainDiagnostics):
         return self._diagnostics[1].marginal_variance()
 
     def mean(self):
-        return self._diagnostics[1].mean
+        return self._diagnostics[1].mean()
 
     def process(self, transition_data):
         for diagnostic in self._diagnostics:

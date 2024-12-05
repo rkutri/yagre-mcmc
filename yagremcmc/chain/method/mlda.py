@@ -97,7 +97,7 @@ class MLDAProposal(ProposalMethod):
 
     def surrogate(self, sIdx):
 
-        if sIdx < 0 or sIdx >= self._surrogateHierarchy.size:
+        if sIdx < -1 or sIdx >= self._surrogateHierarchy.size:
             raise IndexError(f"invalid surrogate index: {sIdx}")
 
         return self._surrogateHierarchy.level(sIdx)
@@ -147,6 +147,9 @@ class MLDA(MetropolisHastings):
     def nSurrogates(self):
         return self._proposalMethod.nSurrogates
 
+    def surrogate(self, sIdx):
+        return self._proposalMethod.surrogate(sIdx)
+
     def _acceptance_probability(self, proposal, state):
 
         ratio = exp(
@@ -193,6 +196,14 @@ class MLDABuilder(ChainBuilder):
     @surrogateTargets.setter
     def surrogateTargets(self, tgts):
         self._surrTgts = tgts
+
+    @property
+    def targetDiagnostics(self):
+        return self._tgtDgnst
+
+    @targetDiagnostics.setter
+    def targetDiagnostics(self, diagnostics):
+        self._tgtDgnst = diagnostics
 
     @property
     def surrogateDiagnostics(self):

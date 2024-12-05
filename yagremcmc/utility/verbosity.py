@@ -43,10 +43,10 @@ class VerbosityController:
             return
 
         if iterIdx == 0:
-            self._logger.info(f"Starting chain.")
+            self._logger.info("\n\n\nStarting chain.")
 
         if iterIdx % self._printInterval == 0 and iterIdx > 0:
 
             self._logger.info(
-                f"{iterIdx} steps computed. Calculating diagnostics.")
+                f"\n\n{iterIdx} steps computed. Calculating diagnostics.\n")
             self._diagnostics.print_diagnostics(self._logger)

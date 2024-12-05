@@ -48,8 +48,8 @@ def test_mean_estimation(setup_am):
 
     meanEst = np.mean(states, axis=0)
 
-    assert np.allclose(meanEst, trueMean, atol=0.03), f"Estimated mean {
-        meanEst} differs from true mean {trueMean}"
+    assert np.allclose(meanEst, trueMean, atol=0.03), f"Estimated mean " \
+        "{meanEst} differs from true mean {trueMean}"
 
 
 @pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
@@ -69,8 +69,9 @@ def test_covariance_estimation(setup_am):
 
     covEst = np.cov(states, rowvar=False)
 
-    assert np.allclose(covEst, trueCov, atol=0.05), f"Estimated covariance\n{
-        covEst}\ndiffers from true covariance\n{trueCov}"
+    assert np.allclose(covEst, trueCov, atol=0.05), \
+        f"Estimated covariance\n{covEst}\ndiffers from true " \
+        "covariance\n{trueCov}"
 
 
 @pytest.mark.skip(reason="Use of adaptive proposals is deprecated for now.")
@@ -86,5 +87,5 @@ def test_acceptance_rate(setup_am):
 
     acceptanceRate = mcmc.chain.diagnostics.global_acceptance_rate()
 
-    assert 0.1 <= acceptanceRate <= 0.8, f"Acceptance rate {
-        acceptanceRate} is out of expected range"
+    assert 0.1 <= acceptanceRate <= 0.8, f"Acceptance rate {acceptanceRate} " \
+        "is out of expected range"
