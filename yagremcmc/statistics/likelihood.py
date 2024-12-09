@@ -2,6 +2,7 @@ import numpy as np
 
 from yagremcmc.utility.memoisation import EvaluationCache
 from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.statistics.estimation import WelfordAccumulator 
 
 
 class AdditiveNoiseLikelihood(DensityInterface):
@@ -38,3 +39,17 @@ class AdditiveNoiseLikelihood(DensityInterface):
         self.llCache_.add(parameter, logL)
 
         return logL
+
+
+class AdaptiveErrorCorrection(DensityInterface):
+
+    def __init__(self, likelihood : AdditiveNoiseLikelihood):
+
+        self._likelihood = likelihood
+        self._errorEstimator = WelfordAccumulator()
+
+    def evaluate_log(self, parameter):
+        pass
+
+
+

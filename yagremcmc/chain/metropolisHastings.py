@@ -9,6 +9,8 @@ from yagremcmc.chain.chain import Chain
 from yagremcmc.utility.verbosity import VerbosityController
 
 
+
+
 class MetropolisHastings(ABC):
     """
     Template class for Metropolis-Hastings-type chains
@@ -58,7 +60,7 @@ class MetropolisHastings(ABC):
         # in __acceptance_probability. The probability of this happening is
         # non-zero in MLDA
         if proposal == state:
-            return TransitionData(state, TransitionData.REJECTED)
+            return TransitionData(state, proposal, TransitionData.REJECTED)
 
         acceptProb = self._acceptance_probability(proposal, state)
 
@@ -68,12 +70,37 @@ class MetropolisHastings(ABC):
         decision = uniform(low=0., high=1., size=1)[0]
 
         if decision <= acceptProb:
-            return TransitionData(proposal, TransitionData.ACCEPTED)
+            return TransitionData(state, proposal, TransitionData.ACCEPTED)
         else:
-            return TransitionData(state, TransitionData.REJECTED)
+            return TransitionData(state, proposal, TransitionData.REJECTED)
 
-    def _update_chain(self, stateVector):
-        self._chain.append(stateVector)
+    def _update_chain(self, nextState):
+        self._chain.append(nextState.coefficient)
+
+    # make it a class method to allows derived classed to override
+    def determine_next_state(self, transitionData):
+
+        nextState = None
+
+        if transitionData.outcome == TransitionData.ACCEPTED:
+            nextState = transitionData.proposal
+
+        elif transitionData.outcome == TransitionData.REJECTED:
+            nextState = transitionData.state
+        else:
+            raise ValueError(
+                f"Invalid transition outcome: {transitionData.outcome}")
+
+        return nextState
+
+    def _process_transition(self, transitionData):
+
+        self._diagnostics.process(transitionData)
+
+        nextState = self.determine_next_state(transitionData)
+        self._update_chain(nextState)
+
+        return nextState
 
     def run(self, chainLength, initialState, verbose=True):
 
@@ -92,9 +119,4 @@ class MetropolisHastings(ABC):
             proposal = self._proposalMethod.generate_proposal()
 
             transitionOutcome = self._accept_reject(proposal, state)
-            state = transitionOutcome.state
-
-            self._diagnostics.process(transitionOutcome)
-            self._update_chain(state.coefficient)
-
-        return
+            state = self._process_transition(transitionOutcome)

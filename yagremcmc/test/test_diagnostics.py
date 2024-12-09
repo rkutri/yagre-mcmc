@@ -16,7 +16,7 @@ def test_acceptance_rate_diagnostics(testLag):
     diagnostics.lag = testLag
 
     # Create transition data with alternating ACCEPTED and REJECTED
-    transitions = [TransitionData(state=None, outcome=outcome) for outcome in (
+    transitions = [TransitionData(state=None, proposal=None, outcome=outcome) for outcome in (
         [TransitionData.ACCEPTED] * testLag + [TransitionData.REJECTED] * testLag)]
 
     for t in transitions:
@@ -44,9 +44,11 @@ def test_moment_diagnostics(paramDim):
     stateVectors = [np.random.randn(paramDim[1]) for _ in range(paramDim[0])]
 
     for vector in stateVectors:
-        transitionData = TransitionData(state=ScalarParameter(
-            vector), outcome=TransitionData.ACCEPTED)
-        accumulator.update(transitionData.state.coefficient)
+        transitionData = TransitionData(
+                state=None,
+                proposal=ScalarParameter(vector),
+                outcome=TransitionData.ACCEPTED)
+        accumulator.update(transitionData.proposal.coefficient)
 
     computedMean = accumulator.mean()
     computedVar = accumulator.marginal_variance()
