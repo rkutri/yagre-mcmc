@@ -1,8 +1,8 @@
 import numpy as np
 
-from collections import deque
 from yagremcmc.chain.interface import ChainDiagnostics
 from yagremcmc.chain.transition import TransitionData
+from yagremcmc.statistics.estimation import WelfordAccumulator
 
 
 class DummyDiagnostics(ChainDiagnostics):
@@ -64,77 +64,11 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
         self._decisions = []
 
 
-class WelfordAccumulator(ChainDiagnostics):
-    def __init__(self):
-        self._dataSize = 0
-        self._mean = None
-        self._welfordM2 = None
-
-    def mean(self):
-        return self._mean
-
-    def marginal_variance(self):
-        """
-        unbiased estimate of the marginal variance
-        """
-        if self._dataSize < 2:
-            raise RuntimeError("Insufficient data for variance estimation.")
-        return self._welfordM2 / (self._dataSize - 1)
-
-    @property
-    def nData(self):
-        return self._dataSize
-
-    def _update(self, state_vector):
-        """
-        Welford's algorithm for stable computation of variance.
-        """
-        if self._mean is None:
-            self._mean = np.zeros_like(state_vector)
-            self._welfordM2 = np.zeros_like(state_vector)
-
-        delta = state_vector - self._mean
-
-        # update mean
-        self._dataSize += 1
-        self._mean += delta / self._dataSize
-
-        delta2 = state_vector - self._mean
-
-        # update squared differences
-        self._welfordM2 += delta * delta2
-
-    def condition_number(self):
-
-        margVar = self.marginal_variance()
-
-        tol = 1e-12
-        if np.min(margVar) < tol:
-            raise RuntimeError("Singular marginal variance.")
-
-        return np.max(margVar) / np.min(margVar)
-
-    def process(self, transitionData):
-
-        stateVector = transitionData.state.coefficient
-        self._update(stateVector)
-
-    def print_diagnostics(self, logger):
-
-        logger.info(f"  - Estimated mean: {self.mean()}")
-        logger.info(
-            f"  - Estimated condition number: {self.condition_number():.4f}")
-
-    def clear(self):
-        self._dataSize = 0
-        self._mean = None
-        self._welfordM2 = None
-
-
 class FullDiagnostics(ChainDiagnostics):
 
     def __init__(self):
-        self._diagnostics = [AcceptanceRateDiagnostics(), WelfordAccumulator()]
+        self._diagnostics = AcceptanceRateDiagnostics()
+        self._accumulator = WelfordAccumulator()
         self._lag = None
 
     @property
@@ -144,25 +78,31 @@ class FullDiagnostics(ChainDiagnostics):
     @lag.setter
     def lag(self, lag):
         self._lag = lag
-        self._diagnostics[0].lag = lag
 
     def global_acceptance_rate(self):
-        return self._diagnostics[0].global_acceptance_rate()
+        return self._diagnostics.global_acceptance_rate()
 
     def marginal_variance(self):
-        return self._diagnostics[1].marginal_variance()
+        return self._accumulator.marginal_variance()
 
     def mean(self):
-        return self._diagnostics[1].mean()
+        return self._accumulator.mean()
 
-    def process(self, transition_data):
-        for diagnostic in self._diagnostics:
-            diagnostic.process(transition_data)
+    def process(self, transitionData):
+
+        self._diagnostics.process(transitionData)
+        self._accumulator.update(transitionData.state.coefficient)
 
     def print_diagnostics(self, logger):
-        for diagnostic in self._diagnostics:
-            diagnostic.print_diagnostics(logger)
+
+        self._diagnostics.lag = self._lag
+        self._diagnostics.print_diagnostics(logger)
+
+        logger.info(f"  - Estimated mean: {self._accumulator.mean()}")
+        logger.info(f"  - Estimated condition number: "
+            "{self._accumulator.condition_number():.4f}")
 
     def clear(self):
-        for diagnostic in self._diagnostics:
-            diagnostic.clear()
+
+        self._diagnostics.clear()
+        self._accumulator.reset()

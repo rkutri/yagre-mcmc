@@ -12,7 +12,7 @@ from yagremcmc.parameter.vector import ParameterVector
 @pytest.mark.parametrize("mcmcProposal", ["iid", "indep"])
 @pytest.mark.parametrize("Diagnostics",
                          [DummyDiagnostics, AcceptanceRateDiagnostics,
-                          WelfordAccumulator, FullDiagnostics])
+                          FullDiagnostics])
 def test_moments(mcmcProposal, Diagnostics):
 
     seed(116)

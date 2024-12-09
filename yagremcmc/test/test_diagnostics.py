@@ -3,7 +3,8 @@ import numpy as np
 
 from yagremcmc.chain.transition import TransitionData
 from yagremcmc.parameter.scalar import ScalarParameter
-from yagremcmc.chain.diagnostics import *
+from yagremcmc.chain.diagnostics import AcceptanceRateDiagnostics
+from yagremcmc.statistics.estimation import WelfordAccumulator
 
 
 @pytest.mark.parametrize("testLag", [5, 500, 50000])
@@ -38,17 +39,17 @@ def test_moment_diagnostics(paramDim):
     """
     Test WelfordAccumulator against NumPy implementations of mean and variance.
     """
-    diagnostics = WelfordAccumulator()
+    accumulator = WelfordAccumulator()
 
     stateVectors = [np.random.randn(paramDim[1]) for _ in range(paramDim[0])]
 
     for vector in stateVectors:
         transitionData = TransitionData(state=ScalarParameter(
             vector), outcome=TransitionData.ACCEPTED)
-        diagnostics.process(transitionData)
+        accumulator.update(transitionData.state.coefficient)
 
-    computedMean = diagnostics.mean()
-    computedVar = diagnostics.marginal_variance()
+    computedMean = accumulator.mean()
+    computedVar = accumulator.marginal_variance()
 
     # Compute expected results using NumPy
     expectedMean = np.mean(stateVectors, axis=0)
@@ -60,7 +61,7 @@ def test_moment_diagnostics(paramDim):
     assert np.allclose(computedVar, expectedVar), \
         f"variance mismatch: {computedVar} vs. {expectedVar}"
 
-    diagnostics.clear()
+    accumulator.reset()
 
 
 if __name__ == "__main__":

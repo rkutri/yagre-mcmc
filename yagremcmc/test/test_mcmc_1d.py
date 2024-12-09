@@ -13,7 +13,7 @@ from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 @pytest.mark.parametrize("Diagnostics",
                          [DummyDiagnostics, AcceptanceRateDiagnostics,
-                          WelfordAccumulator, FullDiagnostics])
+                          FullDiagnostics])
 def test_metropolishastings_initialisation(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([1.]))
@@ -33,7 +33,7 @@ def test_metropolishastings_initialisation(Diagnostics):
 
 @pytest.mark.parametrize("Diagnostics",
                          [DummyDiagnostics, AcceptanceRateDiagnostics,
-                          WelfordAccumulator, FullDiagnostics])
+                          FullDiagnostics])
 def test_accept_reject(Diagnostics):
 
     tgtMean = ScalarParameter.from_coefficient(np.array([0.]))
@@ -57,7 +57,7 @@ def test_accept_reject(Diagnostics):
 
 @pytest.mark.parametrize("Diagnostics",
                          [DummyDiagnostics, AcceptanceRateDiagnostics,
-                          WelfordAccumulator, FullDiagnostics])
+                          FullDiagnostics])
 def test_run_chain(Diagnostics):
 
     seed(18)
