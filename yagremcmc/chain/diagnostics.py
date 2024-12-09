@@ -99,8 +99,8 @@ class FullDiagnostics(ChainDiagnostics):
         self._diagnostics.print_diagnostics(logger)
 
         logger.info(f"  - Estimated mean: {self._accumulator.mean()}")
-        logger.info(f"  - Estimated condition number: "
-            "{self._accumulator.condition_number():.4f}")
+        logger.info("  - Estimated condition number: "
+                    f"{self._accumulator.condition_number():.4f}")
 
     def clear(self):
 

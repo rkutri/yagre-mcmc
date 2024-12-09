@@ -7,7 +7,6 @@ from yagremcmc.statistics.covariance import (DenseCovarianceMatrix,
                                              IIDCovarianceMatrix)
 from yagremcmc.chain.diagnostics import FullDiagnostics
 from yagremcmc.chain.method.mlda import MLDABuilder
-from yagremcmc.chain.method.amlda import AdaptiveMLDABuilder
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
@@ -24,45 +23,34 @@ surrCov = np.array([[1.6, 0.2], [0.2, 1.1]])
 
 surrDensity = GaussianTargetDensity2d(surrMean, surrCov)
 
-print(f"target mean: {tgtMean.coefficient}")
-print(f"surrogate mean: {surrMean.coefficient}")
-
 # set MLDA-specific parameters
 basePropVar = 0.75
 baseProposalCov = IIDCovarianceMatrix(tgtMean.dimension, basePropVar)
 subChainLength = 6
 
-# set up builders for vanilla and adaptive MLDA variants
-mldaBuilder = [MLDABuilder(), AdaptiveMLDABuilder()]
+# set up builders for vanilla and corrected MLDA variants
+builder = MLDABuilder()
 
-for builder in mldaBuilder:
+builder.explicitTarget = tgtDensity
+builder.surrogateTargets = [surrDensity]
+builder.baseProposalCovariance = baseProposalCov
+builder.subChainLengths = [4]
 
-    builder.explicitTarget = tgtDensity
-    builder.surrogateTargets = [surrDensity]
-    builder.baseProposalCovariance = baseProposalCov
-    builder.subChainLengths = [4]
+vanillaMLDA = builder.build_method()
 
-# use full diangostics for MLDA, including moments
-mldaBuilder[0].targetDiagnostics = FullDiagnostics()
-mldaBuilder[0].surrogateDiagnostics = [FullDiagnostics()]
-
-# set adaptivity parameters
-mldaBuilder[1].idleSteps = 100
-mldaBuilder[1].nEstimation = 400
-
-mlda = mldaBuilder[0].build_method()
-amlda = mldaBuilder[1].build_method()
+builder.biasCorrection = [meanShift]
+correctedMLDA = builder.build_method()
 
 # run parameters
 nSteps = 50000
 initState = ParameterVector(np.array([-9., -7.]))
 
 # run both chains
-mlda.run(nSteps, initState)
-mldaStates = np.array(mlda.chain.trajectory)
+vanillaMLDA.run(nSteps, initState)
+vanillaMLDAStates = np.array(vanillaMLDA.chain.trajectory)
 
-amlda.run(nSteps, initState)
-amldaStates = np.array(amlda.chain.trajectory)
+correctedMLDA.run(nSteps, initState)
+correctedMLDAStates = np.array(correctedMLDA.chain.trajectory)
 
 # postprocessing
 dim = tgtMean.dimension
@@ -70,37 +58,37 @@ burnIn = 100
 
 assert nSteps > burnIn
 
-mldaThinning = integrated_autocorrelation(mldaStates[burnIn:], 'max')
-mldaSamples = mldaStates[burnIn::mldaThinning]
+vanillaMLDAThinning = integrated_autocorrelation(
+    vanillaMLDAStates[burnIn:], 'max')
+vanillaMLDASamples = vanillaMLDAStates[burnIn::vanillaMLDAThinning]
 
-amldaThinning = integrated_autocorrelation(amldaStates[burnIn:], 'max')
-amldaSamples = amldaStates[burnIn::amldaThinning]
+correctedMLDAThinning = integrated_autocorrelation(
+    correctedMLDAStates[burnIn:], 'max')
+correctedMLDASamples = correctedMLDAStates[burnIn::correctedMLDAThinning]
 
 # compare diagnostics
 print("\nMLDA Analytics")
 print("--------------")
-print(f"acceptance rate: {mlda.diagnostics.global_acceptance_rate()}")
-print(f"IAT estimate: {mldaThinning}")
-print(f"surrogate mean estimate: {mlda.surrogate(0).diagnostics.mean()}")
+print(f"acceptance rate: {vanillaMLDA.diagnostics.global_acceptance_rate()}")
+print(f"IAT estimate: {vanillaMLDAThinning}")
 
 print("\nAdaptive MLDA Analytics")
 print("-----------------------")
-print(f"acceptance rate: {amlda.diagnostics.global_acceptance_rate()}")
-print(f"IAT estimate: {amldaThinning}")
-print(f"surrogate mean estimate: {amlda.surrogate(0).diagnostics.mean()}")
-print(f"error correction: {amlda.surrogate(0).target.correction}")
+print(f"acceptance rate: {correctedMLDA.diagnostics.global_acceptance_rate()}")
+print(f"IAT estimate: {correctedMLDAThinning}")
+print(f"error correction: {correctedMLDA.surrogate(0).target.correction}")
 
 print("\nMLDA Inference")
 print("--------------")
 print(f"true mean: {tgtMean.coefficient}")
-print(f"mean state: {np.mean(mldaStates, axis=0)}")
-print(f"mean estimate: {np.mean(mldaSamples, axis=0)}")
+print(f"mean state: {np.mean(vanillaMLDAStates, axis=0)}")
+print(f"mean estimate: {np.mean(vanillaMLDASamples, axis=0)}")
 
 print("\nAdaptive MLDA Inference")
 print("--------------")
 print(f"true mean: {tgtMean.coefficient}")
-print(f"mean state: {np.mean(amldaStates, axis=0)}")
-print(f"mean estimate: {np.mean(amldaSamples, axis=0)}")
+print(f"mean state: {np.mean(correctedMLDAStates, axis=0)}")
+print(f"mean estimate: {np.mean(correctedMLDASamples, axis=0)}")
 print("\n\n\n")
 
 fig, ax = plt.subplots(1, 2, figsize=(12, 6))
@@ -134,18 +122,18 @@ for i in [0, 1]:
 
     # Extract x and y coordinates
     if i == 0:
-        states = mldaStates
-        samples = mldaSamples
+        states = vanillaMLDAStates
+        samples = vanillaMLDASamples
         titleStr = "MLDA"
 
     else:
-        states = amldaStates
-        samples = amldaSamples
+        states = correctedMLDAStates
+        samples = correctedMLDASamples
         titleStr = "Adaptive MLDA"
 
         # show shifted surrogate
         shiftedSurrMean = ParameterVector(
-            surrMean.coefficient - amlda.surrogate(0).target.correction)
+            surrMean.coefficient - correctedMLDA.surrogate(0).target.correction)
         shiftedSurrogateDensity = GaussianTargetDensity2d(
             shiftedSurrMean, surrCov)
 
@@ -167,8 +155,7 @@ for i in [0, 1]:
                        arrowprops=dict(
                            arrowstyle="->",
                            color="black",
-                           lw=2              # Line width
-                       )
+                           lw=3)
                        )
 
     meanEst = np.mean(samples, axis=0)

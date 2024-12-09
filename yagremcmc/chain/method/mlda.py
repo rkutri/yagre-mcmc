@@ -4,7 +4,7 @@ from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
 from yagremcmc.chain.builder import ChainBuilder
-from yagremcmc.chain.target import UnnormalisedPosterior
+from yagremcmc.chain.target import UnnormalisedPosterior, BiasCorrection
 from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
 from yagremcmc.utility.hierarchy import Hierarchy
 
@@ -172,6 +172,7 @@ class MLDABuilder(ChainBuilder):
         self._surrTgts = None
         self._surrDgnstList = None
         self._tgtDgnst = None
+        self._biasCorrection = None
 
     @property
     def baseProposalCovariance(self):
@@ -213,7 +214,22 @@ class MLDABuilder(ChainBuilder):
     def surrogateDiagnostics(self, surrDgnstList):
         self._surrDgnstList = surrDgnstList
 
+    @property
+    def biasCorrection(self):
+        return self._biasCorrection
+
+    @biasCorrection.setter
+    def biasCorrection(self, bias):
+        self._biasCorrection = bias
+
     def _validate_parameters(self):
+
+        if self._basePropCov is None:
+            raise ValueError("Coarse proposal covariance not set for MLDA")
+
+        if self._nSteps is None:
+            raise ValueError("Subchain lengths not set for MLDA")
+
 
         if self._bayesModel is not None:
 
@@ -227,6 +243,12 @@ class MLDABuilder(ChainBuilder):
             if not len(self._nSteps) == self._bayesModel.size - 1:
                 raise ValueError("Number of sub-chain lengths does not match "
                                  "the size of the model hierarchy.")
+
+            if self._biasCorrection is not None:
+                if not len(self._biasCorrection) == self._bayesModel.size - 1:
+                    raise ValueError("Number of bias corrections does not "
+                        " match the size of the model hierarchy")
+
 
             if self._surrDgnstList is not None:
                 if not len(self._surrDgnstList) == self._bayesModel.size - 1:
@@ -248,11 +270,10 @@ class MLDABuilder(ChainBuilder):
                     raise ValueError("Number of diagnostics does not match "
                                      "the size of the model hierarchy")
 
-        if self._basePropCov is None:
-            raise ValueError("Coarse proposal covariance not set for MLDA")
-
-        if self._nSteps is None:
-            raise ValueError("Subchain lengths not set for MLDA")
+            if self._biasCorrection is not None:
+                if not len(self._biasCorrection) == len(self._surrTgts):
+                    raise ValueError("Number of bias corrections does not "
+                        " match the number of surrogate targets")
 
         return
 
@@ -267,24 +288,46 @@ class MLDABuilder(ChainBuilder):
 
         return
 
+    def _construct_surrogate_posteriors(self, nSurrogates):
+
+        surrogateDensities = []
+
+        for k in range(nSurrogates):
+
+            targetPosterior = UnnormalisedPosterior(self._bayesModel.level(k))
+
+            if self._biasCorrection is None:
+                surrogateDensities.append(targetPosterior)
+
+            else:
+
+                correction = self._biasCorrection[k]
+                surrogateDensities.append(BiasCorrection(targetPosterior, correction))
+
+    def finalise_surrogate_targets(self, surrogateTgts):
+
+        if self._biasCorrection is None:
+            return
+        else:
+            for idx, tgt in enumerate(surrogateTgts):
+                surrogateTgts[idx] = BiasCorrection(tgt, self._biasCorrection[idx])
+
+            
+
     def build_from_model(self):
 
         self._validate_parameters()
 
         targetDensity = UnnormalisedPosterior(self._bayesModel.target)
 
-        surrogateDensities = []
-
         nSurrogates = self._bayesModel.size - 1
+        surrogatePosteriors = self._construct_surrogate_posteriors(nSurrogates)
 
-        for k in range(nSurrogates):
-            surrogateDensities.append(
-                UnnormalisedPosterior(self._bayesModel.level(k)))
-
+        self.finalise_surrogate_targets(surrogatePosteriors)
         self.create_diagnostics(nSurrogates)
 
         return MLDA(targetDensity,
-                    surrogateDensities,
+                    surrogatePosteriors,
                     self._basePropCov,
                     self._nSteps,
                     self._tgtDgnst,
@@ -293,6 +336,7 @@ class MLDABuilder(ChainBuilder):
 
     def build_from_target(self):
 
+        self.finalise_surrogate_targets(self._surrTgts)
         self.create_diagnostics(len(self._surrTgts))
 
         return MLDA(self._explicitTarget, self._surrTgts,
