@@ -10,7 +10,7 @@ from yagremcmc.chain.method.pcn import PCNBuilder
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
-from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
+from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
@@ -66,7 +66,7 @@ noiseVariance = dataNoiseVar
 noiseModel = CentredGaussianIIDNoise(noiseVariance)
 
 # define the statistical inverse problem
-likelihood = AdditiveNoiseLikelihood(data, fwdModel, noiseModel)
+likelihood = AdditiveGaussianNoiseLikelihood(data, fwdModel, noiseModel)
 statModel = BayesianRegressionModel(prior, likelihood)
 
 # configure the chain setup
@@ -121,7 +121,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print(f"true parameter: {groundTruth.evaluate()}")
 print(f"raw posterior mean: {meanState.evaluate()}")
 print(f"processed posterior mean: {posteriorMean.evaluate()}")
-print(f"Acceptance rate: {sampler.chain.diagnostics.global_acceptance_rate()}")
+print(f"Acceptance rate: {sampler.diagnostics.global_acceptance_rate()}")
 print(f"IAT estimate: {thinningStep}")
 print(f"effective sample size: {(nSteps - burnIn) // thinningStep}")
 

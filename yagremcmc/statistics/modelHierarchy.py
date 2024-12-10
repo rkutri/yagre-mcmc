@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from yagremcmc.utility.hierarchy import Hierarchy, shared, hierarchical
-from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
+from yagremcmc.statistics.likelihood import (AdditiveGaussianNoiseLikelihood,
+                                             AdaptiveErrorCorrection)
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
 
@@ -19,7 +20,8 @@ class BayesianModelHierarchyFactory:
             data: Hierarchy,
             prior: Hierarchy,
             fwdModel: Hierarchy,
-            noiseModel: Hierarchy):
+            noiseModel: Hierarchy,
+            useAdaptiveErrorModel=False):
 
         BayesianModelHierarchyFactory.validate_model_components(
             [("data", data), ("prior", prior),
@@ -31,20 +33,29 @@ class BayesianModelHierarchyFactory:
         self._prior = prior
         self._fwdModel = fwdModel
         self._noiseModel = noiseModel
+        self._useAEM = useAdaptiveErrorModel
 
     def create_model(self):
 
-        likelihoods = [
-            AdditiveNoiseLikelihood(
-                self._data.level(k),
-                self._fwdModel.level(k),
-                self._noiseModel.level(k))
-            for k in range(self._nLevels)]
+        if self._useAEM:
+            likelihoods = [
+                AdaptiveErrorCorrection(
+                    self._data.level(k),
+                    self._fwdModel.level(k),
+                    self._noiseModel.level(k))
+                for k in range(self._nLevels)]
+        else:
+            likelihoods = [
+                AdditiveGaussianNoiseLikelihood(
+                    self._data.level(k),
+                    self._fwdModel.level(k),
+                    self._noiseModel.level(k))
+                for k in range(self._nLevels)]
 
         modelHierarchy = [
             BayesianRegressionModel(
-                self._prior.level(ell),
-                likelihoods[ell])
+                likelihoods[ell],
+                self._prior.level(ell))
             for ell in range(self._nLevels)
         ]
 

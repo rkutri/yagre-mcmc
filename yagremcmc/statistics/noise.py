@@ -2,7 +2,18 @@ from numpy import dot
 from yagremcmc.statistics.interface import NoiseModelInterface
 
 
-class CentredGaussianIIDNoise(NoiseModelInterface):
+class CentredGaussianNoise(NoiseModelInterface):
+
+    @property
+    def covariance(self):
+        pass
+
+
+class IndependentGaussianSumNoise(CentredGaussianNoise):
+    pass
+
+
+class CentredGaussianIIDNoise(CentredGaussianNoise):
 
     def __init__(self, variance):
 

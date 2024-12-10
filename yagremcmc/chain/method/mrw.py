@@ -72,7 +72,8 @@ class MRWBuilder(ChainBuilder):
 
     def build_from_model(self) -> MetropolisHastings:
 
-        targetDensity = UnnormalisedPosterior(self._bayesModel)
+        targetDensity = UnnormalisedPosterior(
+            self._bayesModel.likelihood, self._bayesModel.prior)
 
         return MetropolisedRandomWalk(
             targetDensity, self._proposalCov, self._diagnostics)

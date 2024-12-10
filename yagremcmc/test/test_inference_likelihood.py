@@ -3,12 +3,13 @@ import pytest
 
 from yagremcmc.statistics.data import Data
 from yagremcmc.statistics.interface import NoiseModelInterface
-from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
+from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
+from yagremcmc.statistics.noise import CentredGaussianNoise
 from yagremcmc.parameter.vector import ParameterVector
 from yagremcmc.utility.memoisation import EvaluationCache
 
 
-class MockNoise(NoiseModelInterface):
+class MockNoise(CentredGaussianNoise):
     def induced_norm_squared(self, x):
         return np.sqrt(np.sum(np.square(x)))
 
@@ -35,16 +36,16 @@ def mock_forward_model():
 
 @pytest.fixture
 def mock_likelihood(mock_data, mock_forward_model, mock_noise):
-    return AdditiveNoiseLikelihood(
+    return AdditiveGaussianNoiseLikelihood(
         mock_data, mock_forward_model, mock_noise)
 
 
 def test_initialisation(mock_likelihood, mock_data,
                         mock_forward_model, mock_noise):
 
-    assert mock_likelihood.data_ == mock_data
-    assert mock_likelihood.fwdModel_ == mock_forward_model
-    assert mock_likelihood.noiseModel_ == mock_noise
+    assert mock_likelihood._data == mock_data
+    assert mock_likelihood._fwdModel == mock_forward_model
+    assert mock_likelihood._noiseModel == mock_noise
 
 
 def test_memoisation(mock_likelihood):
@@ -54,9 +55,9 @@ def test_memoisation(mock_likelihood):
     logLCached = mock_likelihood.evaluate_log(parameter)
 
     assert logLFirst == logLCached
-    assert mock_likelihood.llCache_.contains(parameter)
+    assert mock_likelihood._llCache.contains(parameter)
 
-    assert mock_likelihood.llCache_(parameter) == logLFirst
+    assert mock_likelihood._llCache(parameter) == logLFirst
 
 
 def test_cache_eviction():
@@ -91,10 +92,10 @@ def test_stress_test_memoisation(mock_noise, mock_forward_model):
     paramSize = 1000
 
     mockData = Data(np.array([[0]]))
-    likelihood = AdditiveNoiseLikelihood(
+    likelihood = AdditiveGaussianNoiseLikelihood(
         mockData, mock_forward_model, mock_noise)
 
-    likelihood.llCache_ = EvaluationCache(cacheSize)
+    likelihood._llCache = EvaluationCache(cacheSize)
 
     cacheHits = 0
 
@@ -109,20 +110,20 @@ def test_stress_test_memoisation(mock_noise, mock_forward_model):
 
         likelihood.evaluate_log(paramNew)
 
-        if likelihood.llCache_.contains(paramOld):
+        if likelihood._llCache.contains(paramOld):
 
             cacheHits += 1
 
-            logLCached = likelihood.llCache_(paramOld)
+            logLCached = likelihood._llCache(paramOld)
             logL = likelihood.evaluate_log(paramOld)
 
             assert logLCached == logL
 
-        if likelihood.llCache_.contains(paramNew):
+        if likelihood._llCache.contains(paramNew):
 
             cacheHits += 1
 
-            logLCached = likelihood.llCache_(paramNew)
+            logLCached = likelihood._llCache(paramNew)
             logL = likelihood.evaluate_log(paramNew)
 
             assert logLCached == logL

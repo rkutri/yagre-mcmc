@@ -9,7 +9,7 @@ from yagremcmc.chain.method.mlda import MLDABuilder
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
-from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
+from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
 from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchyFactory
 from yagremcmc.utility.hierarchy import shared, hierarchical
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
@@ -127,7 +127,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print(f"true parameter: {groundTruth.evaluate()}")
 print(f"raw posterior mean: {meanState.evaluate()}")
 print(f"processed posterior mean: {posteriorMean.evaluate()}")
-print(f"Acceptance rate: {sampler.chain.diagnostics.global_acceptance_rate()}")
+print(f"Acceptance rate: {sampler.diagnostics.global_acceptance_rate()}")
 print(f"IAT estimate: {thinningStep}")
 print(f"effective sample size: {(nSteps - burnIn) // thinningStep}")
 

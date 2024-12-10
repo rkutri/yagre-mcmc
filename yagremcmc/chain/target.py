@@ -3,21 +3,22 @@ from yagremcmc.statistics.interface import DensityInterface
 
 class UnnormalisedPosterior(DensityInterface):
 
-    def __init__(self, model):
+    def __init__(self, likelihood, prior):
 
-        self._model = model
+        self._likelihood = likelihood
+        self._prior = prior
 
     def evaluate_log(self, parameter):
 
-        return self._model.log_likelihood(parameter) + \
-            self._model.log_prior(parameter)
+        return self._likelihood.evaluate_log(parameter) + \
+            self._prior.density.evaluate_log(parameter)
 
 
 class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
 
-    def __init__(self, model, tempering):
+    def __init__(self, likelihood, prior, tempering):
 
-        super().__init__(model)
+        super().__init__(likelihood, prior)
         self._tempering = tempering
 
     @property
@@ -30,8 +31,8 @@ class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
 
     def evaluate_log(self, parameter):
 
-        return self._tempering * self._model.log_likelihood(parameter) + \
-            self._model.log_prior(parameter)
+        return self._tempering * self._likelihood.evaluate_log(parameter) + \
+            self._prior.density.evaluate_log(parameter)
 
 
 class BiasCorrection(DensityInterface):

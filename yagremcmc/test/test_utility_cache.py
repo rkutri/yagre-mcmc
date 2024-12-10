@@ -18,7 +18,7 @@ def cache():
     return EvaluationCache(3)
 
 
-def test_cache_add_and_contains(cache):
+def test__cacheadd_and_contains(cache):
 
     param1 = MockParameterInterface(1)
     param2 = MockParameterInterface(2)
@@ -26,24 +26,24 @@ def test_cache_add_and_contains(cache):
     cache.add(param1, 1.5)
     cache.add(param2, -3.226)
 
-    assert len(cache.keys_) == 2
-    assert len(cache.cache_) == 2
+    assert len(cache.keys) == 2
+    assert len(cache._cache) == 2
 
     assert cache.contains(param1) is True
     assert cache.contains(param2) is True
     assert cache.contains(MockParameterInterface(3)) is False
 
 
-def test_cache_misses(cache):
+def test__cachemisses(cache):
 
     param1 = MockParameterInterface(1)
     cache.add(param1, 2e-4)
 
     assert cache.contains(MockParameterInterface(2)) is False
-    assert cache.misses_ == 1
+    assert cache.misses == 1
 
 
-def test_cache_eviction(cache):
+def test__cacheeviction(cache):
 
     param1 = MockParameterInterface(1)
     param2 = MockParameterInterface(2)
@@ -61,7 +61,7 @@ def test_cache_eviction(cache):
     assert cache.contains(param4) is True
 
 
-def test_cache_call(cache):
+def test__cachecall(cache):
 
     param1 = MockParameterInterface(1)
     cache.add(param1, "mockValue")

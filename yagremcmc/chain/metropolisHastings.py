@@ -9,8 +9,6 @@ from yagremcmc.chain.chain import Chain
 from yagremcmc.utility.verbosity import VerbosityController
 
 
-
-
 class MetropolisHastings(ABC):
     """
     Template class for Metropolis-Hastings-type chains

@@ -34,17 +34,19 @@ class CovarianceOperatorInterface(ABC):
 
 class BayesianModelInterface(ABC):
 
+    @property
     @abstractmethod
-    def log_prior(self, parameter: ParameterInterface) -> float:
+    def likelihood(self) -> DensityInterface:
         pass
 
+    @property
     @abstractmethod
-    def log_likelihood(self, parameter: ParameterInterface) -> float:
+    def prior(self) -> ParameterLawInterface:
         pass
 
 
 class NoiseModelInterface(ABC):
 
     @abstractmethod
-    def induced_norm_squared(self, vector):
+    def induced_norm_squared(self, vector) -> float:
         pass

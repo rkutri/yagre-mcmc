@@ -230,7 +230,6 @@ class MLDABuilder(ChainBuilder):
         if self._nSteps is None:
             raise ValueError("Subchain lengths not set for MLDA")
 
-
         if self._bayesModel is not None:
 
             if not isinstance(self._bayesModel, Hierarchy):
@@ -247,8 +246,7 @@ class MLDABuilder(ChainBuilder):
             if self._biasCorrection is not None:
                 if not len(self._biasCorrection) == self._bayesModel.size - 1:
                     raise ValueError("Number of bias corrections does not "
-                        " match the size of the model hierarchy")
-
+                                     " match the size of the model hierarchy")
 
             if self._surrDgnstList is not None:
                 if not len(self._surrDgnstList) == self._bayesModel.size - 1:
@@ -273,7 +271,7 @@ class MLDABuilder(ChainBuilder):
             if self._biasCorrection is not None:
                 if not len(self._biasCorrection) == len(self._surrTgts):
                     raise ValueError("Number of bias corrections does not "
-                        " match the number of surrogate targets")
+                                     " match the number of surrogate targets")
 
         return
 
@@ -294,15 +292,20 @@ class MLDABuilder(ChainBuilder):
 
         for k in range(nSurrogates):
 
-            targetPosterior = UnnormalisedPosterior(self._bayesModel.level(k))
+            surrogatePosterior = UnnormalisedPosterior(
+                self._bayesModel.level(k).likelihood,
+                self._bayesModel.level(k).prior)
 
             if self._biasCorrection is None:
-                surrogateDensities.append(targetPosterior)
+                surrogateDensities.append(surrogatePosterior)
 
             else:
 
                 correction = self._biasCorrection[k]
-                surrogateDensities.append(BiasCorrection(targetPosterior, correction))
+                surrogateDensities.append(
+                    BiasCorrection(surrogatePosterior, correction))
+
+        return surrogateDensities
 
     def finalise_surrogate_targets(self, surrogateTgts):
 
@@ -310,15 +313,16 @@ class MLDABuilder(ChainBuilder):
             return
         else:
             for idx, tgt in enumerate(surrogateTgts):
-                surrogateTgts[idx] = BiasCorrection(tgt, self._biasCorrection[idx])
-
-            
+                surrogateTgts[idx] = BiasCorrection(
+                    tgt, self._biasCorrection[idx])
 
     def build_from_model(self):
 
         self._validate_parameters()
 
-        targetDensity = UnnormalisedPosterior(self._bayesModel.target)
+        targetPosterior = UnnormalisedPosterior(
+            self._bayesModel.level(-1).likelihood,
+            self._bayesModel.level(-1).prior)
 
         nSurrogates = self._bayesModel.size - 1
         surrogatePosteriors = self._construct_surrogate_posteriors(nSurrogates)
@@ -326,7 +330,7 @@ class MLDABuilder(ChainBuilder):
         self.finalise_surrogate_targets(surrogatePosteriors)
         self.create_diagnostics(nSurrogates)
 
-        return MLDA(targetDensity,
+        return MLDA(targetPosterior,
                     surrogatePosteriors,
                     self._basePropCov,
                     self._nSteps,
