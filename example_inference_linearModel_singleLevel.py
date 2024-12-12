@@ -1,3 +1,7 @@
+# set up explicit linear models
+
+# generate data
+
 # set up bayesian model with explicitly known likelihood
 
 # set up surrogate model with an approximate likelihood
