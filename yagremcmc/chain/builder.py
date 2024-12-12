@@ -67,6 +67,8 @@ class ChainBuilder(ABC):
     def build_from_target(self) -> MetropolisHastings:
         pass
 
+    # TODO: use prototypes to be able to generate several methods from the
+    #       same builder. Currently they share states if you try this.
     def build_method(self):
 
         self._validate_parameters()
