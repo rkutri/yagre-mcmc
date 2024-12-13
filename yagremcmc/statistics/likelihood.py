@@ -57,7 +57,7 @@ class AdditiveGaussianNoiseLikelihood(DensityInterface):
         return logL
 
 
-class AdaptiveErrorCorrection(AdditiveGaussianNoiseLikelihood):
+class AdaptiveErrorCorrectionLikelihood(AdditiveGaussianNoiseLikelihood):
 
     def __init__(self, data, forwardModel, noiseModel, minDataSize=500):
 

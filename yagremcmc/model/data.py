@@ -1,8 +1,11 @@
+from numpy import array
+
+
 class Data:
 
     def __init__(self, dataArray):
 
-        self.array_ = dataArray
+        self.array_ = array(dataArray)
 
         self.size_ = dataArray.shape[0]
         self.dim_ = dataArray.shape[1]

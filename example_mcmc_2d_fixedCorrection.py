@@ -166,7 +166,6 @@ for i in [0, 1]:
     mcmcX = [sample[0] for sample in samples]
     mcmcY = [sample[1] for sample in samples]
 
-    # Plot the Markov chain trajectory
     ax[i].set_title(titleStr)
     ax[i].set_xlabel('X')
     ax[i].set_ylabel('Y')
@@ -196,6 +195,5 @@ for i in [0, 1]:
         label='MCMC Mean Estimate')
 
 
-# Show the plot after the loop
 plt.tight_layout()
 plt.show()

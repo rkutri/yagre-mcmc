@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
-class Hierarchy(ABC):
+class HierarchyBase(ABC):
 
     def __init__(self, nLevels):
 
@@ -30,7 +30,7 @@ class Hierarchy(ABC):
         pass
 
 
-class shared(Hierarchy):
+class SharedComponent(HierarchyBase):
 
     def __init__(self, sharedComponent, nLevels: int):
 
@@ -45,7 +45,7 @@ class shared(Hierarchy):
         return self._sharedComponent
 
 
-class hierarchical(Hierarchy):
+class Hierarchy(HierarchyBase):
 
     def __init__(self, hierarchy: List):
 

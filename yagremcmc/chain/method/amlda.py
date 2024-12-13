@@ -47,8 +47,6 @@ class AdaptiveErrorCorrectionMLDABuilder(MLDABuilder):
 
         super().__init__(self)
 
-        self._minDataSize = None
-
     def _validate_parameters(self):
 
         super()._validate_parameters()

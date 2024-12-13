@@ -1,24 +1,29 @@
 from abc import ABC, abstractmethod
-from yagremcmc.model.evaluation import EvaluationStatus
-from yagremcmc.parameter.interface import ParameterInterface
+from typing import Any
+from yagremcmc.model.forwardModel import EvaluationStatus
+from yagremcmc.parameter import ParameterInterface
 
 
 class SolverInterface(ABC):
     """
-    Interface for solvers providing evaluations of the forward model.
+    Interface for solvers that compute evaluations of a forward model.
 
-    This interface represents a solver that is associated with a specific
-    forward model. The associated parameter is set via 'interpolate'.
+    Each solver corresponds internally to a forward model configured
+    with a specific parameter set. This interface defines methods
+    for retrieving the solver's status, the result of evaluations,
+    and performing the evaluation process.
     """
 
     @property
     @abstractmethod
     def status(self) -> EvaluationStatus:
         """
-        Retrieves status of the last solver evaluation
+        Retrieve the status of the last evaluation performed by the solver.
 
         Returns:
-            EvaluationStatus: The status lf the last evaluation
+            EvaluationStatus: The status of the last evaluation, which may
+                              indicate success, failure, or another state
+                              depending on the implementation.
         """
         pass
 
@@ -26,14 +31,11 @@ class SolverInterface(ABC):
     @abstractmethod
     def evaluation(self) -> Any:
         """
-        Retrieves the result of the last evaluation performed by the solver.
-
-        The type of the evaluation result depends on the forward model used
-        and the specific solver implementation.
+        Retrieve the result of the last evaluation performed by the solver.
 
         Returns:
-            Any: The result of the solver's evaluation.	The type is
-                 model-dependent.
+            Any: The result of the solver's evaluation. The type of the result
+                 is model-dependent
         """
         pass
 
@@ -42,25 +44,24 @@ class SolverInterface(ABC):
         """
         Prepare the solver for evaluation with the provided parameter object.
 
-        Internally, set the solver to a state which corresponds to the forward
-        model with this fixed parameter.
+        This method configures the solver's internal state to correspond
+        to the forward model with the specified parameter set.
 
         Args:
-            parameter (ParameterInterface): The parameter object used to
-                                            configure the solver for the next
+            parameter (ParameterInterface): The parameter object defining the
+                                            configuration for the next
                                             evaluation.
-
-        Returns:
-            None
         """
         pass
 
     @abstractmethod
     def invoke(self) -> None:
         """
-        Perform the evaluation of the forward model with the current state.
+        Perform the evaluation of the forward model using the current
+        configuration.
 
-        Returns:
-            None
+        This method executes the forward model's computation with the
+        parameter and state set by the `interpolate` method. It updates
+        the solver's status and stores the evaluation result internally.
         """
         pass

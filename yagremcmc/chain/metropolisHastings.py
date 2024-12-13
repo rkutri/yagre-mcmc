@@ -118,3 +118,8 @@ class MetropolisHastings(ABC):
 
             transitionOutcome = self._accept_reject(proposal, state)
             state = self._process_transition(transitionOutcome)
+
+    def clear(self):
+
+        self._diagnostics.reset()
+        self._chain.clear()
