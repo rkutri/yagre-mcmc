@@ -45,9 +45,9 @@ def test_moment_diagnostics(paramDim):
 
     for vector in stateVectors:
         transitionData = TransitionData(
-                state=None,
-                proposal=ScalarParameter(vector),
-                outcome=TransitionData.ACCEPTED)
+            state=None,
+            proposal=ScalarParameter(vector),
+            outcome=TransitionData.ACCEPTED)
         accumulator.update(transitionData.proposal.coefficient)
 
     computedMean = accumulator.mean()

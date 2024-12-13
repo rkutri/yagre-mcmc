@@ -52,8 +52,9 @@ class AdaptiveErrorCorrectionMLDABuilder(MLDABuilder):
         super()._validate_parameters()
 
         if self._bayesModel is None:
-            raise NotImplementedError("Adaptive error correction only makes "
-                                      "sense if the target emerges from a Bayesian model.")
+            raise NotImplementedError(
+                "Adaptive error correction only makes "
+                "sense if the target emerges from a Bayesian model.")
 
         for i in range(self._bayesModel.size):
             if not isinstance(self._bayesModel.level(

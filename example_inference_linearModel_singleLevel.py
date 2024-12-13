@@ -1,13 +1,23 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-from numpy.random import seed
+from numpy.random import seed, standard_normal
 from exampleSetup import ExampleLinearModelSolver
 from yagremcmc.parameter.vector import ParameterVector
 from yagremcmc.model.forwardModel import ForwardModel
+from yagremcmc.statistics.data import Data
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
-from yagremcmc.utility.hierarchy import SharedComponent, HierarchicalComponent
+from yagremcmc.statistics.likelihood import (AdditiveGaussianNoiseLikelihood,
+                                             AdaptiveErrorCorrectionLikelihood)
+from yagremcmc.statistics.bayesModel import BayesianRegressionModel
+from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchy
+from yagremcmc.utility.hierarchy import SharedComponent, Hierarchy
+from yagremcmc.chain.method.mrw import MRWBuilder
+from yagremcmc.chain.method.mlda import MLDABuilder
+from yagremcmc.chain.method.amlda import AdaptiveErrorCorrectionMLDABuilder
+from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
 seed(2222)
@@ -98,11 +108,11 @@ nLevels = 2
 # declare shared and hierarchical components of the model
 prior = SharedComponent(prior, nLevels)
 noiseModel = SharedComponent(noiseModel, nLevels)
-vanillaLikelihood = HierarchicalComponent(vanillaLikelihood)
-aemLikelihoods = HierarchicalComponent(aemLikelihood)
+vanillaLikelihood = Hierarchy(vanillaLikelihood)
+aemLikelihoods = Hierarchy(aemLikelihood)
 
 # build models
-surModel = BayesianRegressionModel(surlikelihood, prior)
+surModel = BayesianRegressionModel(vanillaSurLikelihood, prior)
 vanillaModel = BayesianModelHierarchy(vanillaLikelihood, prior)
 aemModel = BayesianModelHierarchy(aemLikelihood, prior)
 
@@ -134,27 +144,19 @@ burninBuilder.basePropCov = proposalCov
 burninBuilder.subChainLengths = [20]
 burninBuilder.bayesModel = vanillaModel
 
+mldaBurnin = burninBuilder.build_method()
+
 
 # vanilla MLDA
 # ------------
 
 vanillaMLDABuilder = MLDABuilder()
 
-vanillaBuilder.basePropCov = proposalCov
-vanillaBuilder.subChainLengths = [6]
-vanillaBuilder.bayesModel = vanillaModel
+vanillaMLDABuilder.gc.basePropCov = proposalCov
+vanillaMLDABuilder.gc.subChainLengths = [6]
+vanillaMLDABuilder.gc.bayesModel = vanillaModel
 
-vanillaMLDA = vanillaBuilder.build_method()
-
-
-# adaptive bias correction MLDA
-# ---------------------
-
-corrMLDABuilder = adaptiveBiasCorrectionMLDABuilder()
-
-corrBuilder.basePropCov = proposalCov
-corrBuilder.subChainLengths = [6]
-corrBuilder.bayesModel = vanillaModel
+vanillaMLDA = vanillaMLDABuilder.gc.build_method()
 
 
 # adaptive error correction MLDA
@@ -187,22 +189,18 @@ thinning = integrated_autocorrelation(states, 'mean')
 
 surMean = np.mean(states[burnin::thinning], axis=0)
 
-# use the surrogate mean estimate for the adaptive bias correction
-corrMLDABuilder.surrogateMeans = [surMean]
-corrMLDA = corrMLDABuilder.build_method()
-
-# start the actual burn-in state where the surrogate chain left off
+# start the actual burn-in chain where the surrogate chain left off
 burnin = states[-1]
 nSteps = 5000
 
 print(f"\nBurning-in MLDA with {nSteps} steps, starting at last surrogate chain "
       "position")
 
-burninMLDA.run(nSteps, initState)
+mldaBurnin.run(nSteps, initState)
 
-initState = burninMLDA.chain.trajectory[-1]
+initState = mldaBurnin.chain.trajectory[-1]
 firstInitStateCopy = np.copy(initState)
-burninMLDA.clear()
+mldaBurnin.clear()
 
 nSteps = 50000
 
@@ -210,23 +208,16 @@ print(f"\nRunning {nSteps} steps of vanilla MLDA")
 
 vanillaMLDA.run(nSteps, initState)
 
-print(f"\nRunning {nSteps} of MLDA with adaptive bias correction")
-
-assert initState = firstInitStateCopy
-
-corrMLDA.run(nSteps, initState)
-
 print(f"\nRunning {nSteps} of MLDA with an adaptive error model")
 
-assert initState = firstInitStateCopy
+assert initState == firstInitStateCopy
 
 aemMLDA.run(nSteps, initState)
 
 posteriorMeanEstimates = []
 
 for mcmc, name in [(vanillaMLDA, "vanilla"),
-                   (corrMLDA, "adaptive bias correction"),
-                   (aemMLDA, "adaptive error model")]:
+                   (aemMLDA, "AEM")]:
 
     states = mcmc.chain.trajectory
     thinning = integrated_autocorrelation(states, 'max')
@@ -234,9 +225,9 @@ for mcmc, name in [(vanillaMLDA, "vanilla"),
     posteriorMean = np.mean(states[::thinning], axis=0)
     posteriorMeanEstimates.append(posteriorMean)
 
-    print(f"\n\nResults for {name}:")
+    print(f"\n\nResults for {name} MLDA:")
     print("------------------")
-    print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()")
+    print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
     print(f"IAT estimate: {thinning}")
     print(f"posterior mean: {posteriorMean}")
 
@@ -254,103 +245,103 @@ yGrid = np.linspace(-8., 8., 400)
 X, Y = np.meshgrid(xGrid, yGrid)
 mesh = np.dstack((X, Y))
 
-# FIXME: Adjust accordingly from here
-for i in [0, 2]:
-
-    tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
-    surrDensityEval = surrDensity.evaluate_on_mesh(mesh)
-
-    # Plot the contour lines of the target distributions
-    ax[i].contour(
-        X,
-        Y,
-        tgtDensityEval,
-        levels=5,
-        cmap='Reds',
-        label="Target Density")
-    ax[i].contour(
-        X,
-        Y,
-        surrDensityEval,
-        levels=5,
-        cmap='Blues',
-        label="Surrogate Density")
-
-    # Extract x and y coordinates
-    if i == 0:
-        states = vanillaMLDAStates
-        samples = vanillaMLDASamples
-        titleStr = "MLDA"
-
-    else:
-        states = correctedMLDAStates
-        samples = correctedMLDASamples
-        titleStr = "Adaptive MLDA"
-
-        # show shifted surrogate
-        shiftedSurrMean = ParameterVector(
-            surrMean.coefficient - correctedMLDA.surrogate(0).target.correction)
-        shiftedSurrogateDensity = GaussianTargetDensity2d(
-            shiftedSurrMean, surrCov)
-
-        shiftedEval = shiftedSurrogateDensity.evaluate_on_mesh(mesh)
-        ax[1].contour(
-            X,
-            Y,
-            shiftedEval,
-            levels=5,
-            cmap='Greens',
-            label='Shifted Surrogate Density')
-
-        ax[1].annotate("",
-                       xy=(shiftedSurrMean.coefficient[0],
-                           shiftedSurrMean.coefficient[1]),
-                       xytext=(
-                           surrMean.coefficient[0],
-                           surrMean.coefficient[1]),
-                       arrowprops=dict(
-                           arrowstyle="->",
-                           color="black",
-                           lw=3)
-                       )
-
-    meanEst = np.mean(samples, axis=0)
-
-    chainX = [state[0] for state in states]
-    chainY = [state[1] for state in states]
-
-    mcmcX = [sample[0] for sample in samples]
-    mcmcY = [sample[1] for sample in samples]
-
-    # Plot the Markov chain trajectory
-    ax[i].set_title(titleStr)
-    ax[i].set_xlabel('X')
-    ax[i].set_ylabel('Y')
-    ax[i].legend()
-    ax[i].grid(
-        True,
-        which='both',
-        linestyle='--',
-        linewidth=0.5,
-        color='gray',
-        alpha=0.7)
-
-    ax[i].scatter(
-        mcmcX,
-        mcmcY,
-        color='gray',
-        marker='o',
-        s=40,
-        alpha=0.1,
-        label='Selected Samples')
-    ax[i].scatter(
-        meanEst[0],
-        meanEst[1],
-        color='black',
-        s=120,
-        marker='P',
-        label='MCMC Mean Estimate')
-
-
-plt.tight_layout()
-plt.show()
+# # FIXME: Adjust accordingly from here
+# for i in [0, 2]:
+#
+#     tgtDensityEval = tgtDensity.evaluate_on_mesh(mesh)
+#     surrDensityEval = surrDensity.evaluate_on_mesh(mesh)
+#
+#     # Plot the contour lines of the target distributions
+#     ax[i].contour(
+#         X,
+#         Y,
+#         tgtDensityEval,
+#         levels=5,
+#         cmap='Reds',
+#         label="Target Density")
+#     ax[i].contour(
+#         X,
+#         Y,
+#         surrDensityEval,
+#         levels=5,
+#         cmap='Blues',
+#         label="Surrogate Density")
+#
+#     # Extract x and y coordinates
+#     if i == 0:
+#         states = vanillaMLDAStates
+#         samples = vanillaMLDASamples
+#         titleStr = "MLDA"
+#
+#     else:
+#         states = correctedMLDAStates
+#         samples = correctedMLDASamples
+#         titleStr = "Adaptive MLDA"
+#
+#         # show shifted surrogate
+#         shiftedSurrMean = ParameterVector(
+#             surrMean.coefficient - correctedMLDA.surrogate(0).target.correction)
+#         shiftedSurrogateDensity = GaussianTargetDensity2d(
+#             shiftedSurrMean, surrCov)
+#
+#         shiftedEval = shiftedSurrogateDensity.evaluate_on_mesh(mesh)
+#         ax[1].contour(
+#             X,
+#             Y,
+#             shiftedEval,
+#             levels=5,
+#             cmap='Greens',
+#             label='Shifted Surrogate Density')
+#
+#         ax[1].annotate("",
+#                        xy=(shiftedSurrMean.coefficient[0],
+#                            shiftedSurrMean.coefficient[1]),
+#                        xytext=(
+#                            surrMean.coefficient[0],
+#                            surrMean.coefficient[1]),
+#                        arrowprops=dict(
+#                            arrowstyle="->",
+#                            color="black",
+#                            lw=3)
+#                        )
+#
+#     meanEst = np.mean(samples, axis=0)
+#
+#     chainX = [state[0] for state in states]
+#     chainY = [state[1] for state in states]
+#
+#     mcmcX = [sample[0] for sample in samples]
+#     mcmcY = [sample[1] for sample in samples]
+#
+#     # Plot the Markov chain trajectory
+#     ax[i].set_title(titleStr)
+#     ax[i].set_xlabel('X')
+#     ax[i].set_ylabel('Y')
+#     ax[i].legend()
+#     ax[i].grid(
+#         True,
+#         which='both',
+#         linestyle='--',
+#         linewidth=0.5,
+#         color='gray',
+#         alpha=0.7)
+#
+#     ax[i].scatter(
+#         mcmcX,
+#         mcmcY,
+#         color='gray',
+#         marker='o',
+#         s=40,
+#         alpha=0.1,
+#         label='Selected Samples')
+#     ax[i].scatter(
+#         meanEst[0],
+#         meanEst[1],
+#         color='black',
+#         s=120,
+#         marker='P',
+#         label='MCMC Mean Estimate')
+#
+#
+# plt.tight_layout()
+# plt.show()

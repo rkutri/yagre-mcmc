@@ -57,29 +57,20 @@ class SurrogateHierarchy(Hierarchy):
             raise ValueError("Mismatch in number of surrogate targets and "
                              "corresponding chain diagnostics")
 
-        super().__init__(nLevels)
-
-        self._hierarchy = [
+        hierarchy = [
             MetropolisedRandomWalk(
                 tgtMeasures[0],
                 basePropCov,
                 diagnosticsList[0])]
 
         for level in range(1, nLevels):
-            self._hierarchy.append(SurrogateTransition(
+            hierarchy.append(SurrogateTransition(
                 tgtMeasures[level],
-                self._hierarchy[level - 1],
+                hierarchy[level - 1],
                 diagnosticsList[level],
                 nSteps[level]))
 
-    @property
-    def highest(self):
-        return self._hierarchy[-1]
-
-    def level(self, lvlIdx):
-
-        self.validate_level_index(lvlIdx)
-        return self._hierarchy[lvlIdx]
+        super().__init__(hierarchy)
 
 
 class MLDAProposal(ProposalMethod):
@@ -120,7 +111,7 @@ class MLDAProposal(ProposalMethod):
 
         else:
 
-            surrogate = self._surrogateHierarchy.highest
+            surrogate = self._surrogateHierarchy.level(-1)
             surrogate.set_state(self._state)
 
             return surrogate.generate_proposal()

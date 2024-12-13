@@ -1,5 +1,3 @@
-from enum import Enum, unique
-from yagremcmc.model.interface import SolverInterface
 from yagremcmc.model.evaluation import EvaluationStatus
 
 

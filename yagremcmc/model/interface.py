@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
-from yagremcmc.model.forwardModel import EvaluationStatus
-from yagremcmc.parameter import ParameterInterface
+from yagremcmc.model.evaluation import EvaluationStatus
+from yagremcmc.parameter.interface import ParameterInterface
 
 
 class SolverInterface(ABC):

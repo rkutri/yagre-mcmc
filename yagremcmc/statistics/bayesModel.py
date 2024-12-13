@@ -1,6 +1,7 @@
 from yagremcmc.statistics.interface import BayesianModelInterface
 from yagremcmc.utility.hierarchy import Hierarchy, SharedComponent
 
+
 class BayesianRegressionModel(BayesianModelInterface):
 
     def __init__(self, likelihood, prior):
@@ -15,7 +16,7 @@ class BayesianRegressionModel(BayesianModelInterface):
                 return component.level(0)
             else:
                 raise RuntimeError(f"Setting non-hierarchical {name} with "
-				   f"a {name} hierarchy")
+                                   f"a {name} hierarchy")
 
         return component
 
@@ -26,4 +27,3 @@ class BayesianRegressionModel(BayesianModelInterface):
     @property
     def likelihood(self):
         return self._likelihood
-
