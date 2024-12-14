@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from numpy import ndarray
 from yagremcmc.parameter.interface import ParameterInterface
 
 
@@ -17,15 +18,6 @@ class ParameterLawInterface(ABC):
 
 
 class CovarianceOperatorInterface(ABC):
-
-    @property
-    @abstractmethod
-    def dimension(self):
-        pass
-
-    @abstractmethod
-    def apply_chol_factor(self, x):
-        pass
 
     @abstractmethod
     def apply_inverse(self, x):

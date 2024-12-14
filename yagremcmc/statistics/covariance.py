@@ -1,10 +1,28 @@
 import numpy as np
 
+from abc import abstractmethod
 from scipy.linalg import cholesky, solve_triangular
 from yagremcmc.statistics.interface import CovarianceOperatorInterface
 
 
-class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
+class CovarianceMatrix(CovarianceOperatorInterface):
+
+    @property
+    @abstractmethod
+    def dimension(self):
+        pass
+
+    @abstractmethod
+    def apply_chol_factor(self, x):
+        pass
+
+    def induced_norm_squared(self, x):
+
+        Px = self.apply_inverse(x)
+        return np.dot(x, Px)
+
+
+class DiagonalCovarianceMatrix(CovarianceMatrix):
     """
     Covariance matrix of independent random variables.
 
@@ -16,7 +34,6 @@ class DiagonalCovarianceMatrix(CovarianceOperatorInterface):
     """
 
     def __init__(self, marginalVariances):
-
         self._precision = np.reciprocal(marginalVariances)
 
     @property
@@ -41,7 +58,7 @@ class IIDCovarianceMatrix(DiagonalCovarianceMatrix):
         super().__init__(margVar)
 
 
-class DenseCovarianceMatrix(CovarianceOperatorInterface):
+class DenseCovarianceMatrix(CovarianceMatrix):
 
     def __init__(self, denseCovMat):
 
@@ -63,9 +80,7 @@ class DenseCovarianceMatrix(CovarianceOperatorInterface):
     def apply_inverse(self, x):
 
         y = solve_triangular(self.cholFactor_, x, lower=True)
-
         return solve_triangular(self.cholFactor_.T, y, lower=False)
 
     def dense(self):
-
         return np.matmul(self.cholFactor_, self.cholFactor_.T)

@@ -11,7 +11,7 @@ class UnnormalisedPosterior(DensityInterface):
     def evaluate_log(self, parameter):
 
         return self._likelihood.evaluate_log(parameter) + \
-            self._prior.density.evaluate_log(parameter)
+            self._prior.density.evaluate_log(parameter.coefficient)
 
 
 class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
@@ -32,7 +32,7 @@ class TemperedUnnormalisedPosterior(UnnormalisedPosterior):
     def evaluate_log(self, parameter):
 
         return self._tempering * self._likelihood.evaluate_log(parameter) + \
-            self._prior.density.evaluate_log(parameter)
+            self._prior.density.evaluate_log(parameter.coefficient)
 
 
 class BiasCorrection(DensityInterface):
@@ -48,12 +48,12 @@ class BiasCorrection(DensityInterface):
 
     def evaluate_log(self, parameter):
 
+        paramVector = parameter.coefficient
+
         if self._correction is None:
-            return self._pristineDensity.evaluate_log(parameter)
+            return self._pristineDensity.evaluate_log(paramVector)
 
         else:
 
-            correctedCoefficient = parameter.coefficient + self._correction
-            correctedParameter = parameter.clone_with(correctedCoefficient)
-
-            return self._pristineDensity.evaluate_log(correctedParameter)
+            correctedVector = paramVector + self._correction
+            return self._pristineDensity.evaluate_log(correctedVector)

@@ -1,11 +1,9 @@
 from typing import List, Tuple
 from yagremcmc.utility.hierarchy import Hierarchy
-from yagremcmc.statistics.likelihood import (AdditiveGaussianNoiseLikelihood,
-                                             AdaptiveErrorCorrection)
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
 
-class BayesianModelHierarchy(Hierarchy):
+class BayesianRegressionModelHierarchy(Hierarchy):
 
     INVALID_TYPE_MSG = ("Argument '{}' must be derived from the Hierarchy "
                         "base class. Received type: {}.")
@@ -14,7 +12,7 @@ class BayesianModelHierarchy(Hierarchy):
 
     def __init__(self, likelihood: Hierarchy, prior: Hierarchy):
 
-        BayesianModelHierarchy.validate_model_components([
+        BayesianRegressionModelHierarchy.validate_model_components([
             ("prior", prior),
             ("likelihood", likelihood)
         ])

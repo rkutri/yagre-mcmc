@@ -10,13 +10,12 @@ from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
 from yagremcmc.statistics.likelihood import (AdditiveGaussianNoiseLikelihood,
-                                             AdaptiveErrorCorrectionLikelihood)
+                                             AdaptiveErrorModelLikelihood)
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
-from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchy
+from yagremcmc.statistics.modelHierarchy import BayesianRegressionModelHierarchy
 from yagremcmc.utility.hierarchy import SharedComponent, Hierarchy
 from yagremcmc.chain.method.mrw import MRWBuilder
 from yagremcmc.chain.method.mlda import MLDABuilder
-from yagremcmc.chain.method.amlda import AdaptiveErrorCorrectionMLDABuilder
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
@@ -43,15 +42,14 @@ surFwdModel = ForwardModel(surSolver)
 
 # generate data
 trueParam = ParameterVector(np.array([1.5, 0.5]))
-dataNoiseMargVar = 0.5
+dataNoiseStdDev = np.sqrt(0.5)
 nData = 5
 
-# we're commiting the inverse crime here
 tgtSolver.interpolate(trueParam)
 tgtSolver.invoke()
 
 data = Data(
-    [tgtSolver.evaluation + dataNoiseMargVar * standard_normal(DIM)
+    [tgtSolver.evaluation + dataNoiseStdDev * standard_normal(DIM)
         for _ in range(nData)])
 
 assert data.size == nData
@@ -77,7 +75,7 @@ prior = Gaussian(priorMean, priorCovariance)
 # NOISE
 # -----
 
-noiseMargVar = dataNoiseMargVar
+noiseMargVar = dataNoiseStdDev**2
 noiseModel = CentredGaussianIIDNoise(noiseMargVar)
 
 
@@ -92,9 +90,9 @@ vanillaTgtLikelihood = AdditiveGaussianNoiseLikelihood(
 vanillaLikelihood = [vanillaSurLikelihood, vanillaTgtLikelihood]
 
 minDataSize = 500
-aemSurLikelihood = AdaptiveErrorCorrectionLikelihood(
+aemSurLikelihood = AdaptiveErrorModelLikelihood(
     data, surFwdModel, noiseModel, minDataSize)
-aemTgtLikelihood = AdaptiveErrorCorrectionLikelihood(
+aemTgtLikelihood = AdaptiveErrorModelLikelihood(
     data, surFwdModel, noiseModel, minDataSize)
 
 aemLikelihood = [aemSurLikelihood, aemTgtLikelihood]
@@ -109,23 +107,23 @@ nLevels = 2
 prior = SharedComponent(prior, nLevels)
 noiseModel = SharedComponent(noiseModel, nLevels)
 vanillaLikelihood = Hierarchy(vanillaLikelihood)
-aemLikelihoods = Hierarchy(aemLikelihood)
+aemLikelihood = Hierarchy(aemLikelihood)
 
 # build models
 surModel = BayesianRegressionModel(vanillaSurLikelihood, prior)
-vanillaModel = BayesianModelHierarchy(vanillaLikelihood, prior)
-aemModel = BayesianModelHierarchy(aemLikelihood, prior)
+vanillaModel = BayesianRegressionModelHierarchy(vanillaLikelihood, prior)
+aemModel = BayesianRegressionModelHierarchy(aemLikelihood, prior)
 
 
 # -----------------------------------------------------------------------------
 #                             MCMC SETUP
 # -----------------------------------------------------------------------------
 
-# Surrogate MRW
-# -------------
-
 proposalMVar = 0.15
 proposalCov = IIDCovarianceMatrix(DIM, proposalMVar)
+
+# Surrogate MRW
+# -------------
 
 mrwBuilder = MRWBuilder()
 
@@ -138,37 +136,27 @@ surMRW = mrwBuilder.build_method()
 # Burn-In Chain
 # -------------
 
-burninBuilder = MLDABuilder()
+mldaBuilder = MLDABuilder()
 
-burninBuilder.basePropCov = proposalCov
-burninBuilder.subChainLengths = [20]
-burninBuilder.bayesModel = vanillaModel
+mldaBuilder.basePropCov = proposalCov
+mldaBuilder.subChainLengths = [20]
+mldaBuilder.bayesModel = vanillaModel
 
-mldaBurnin = burninBuilder.build_method()
+mldaBurnin = mldaBuilder.build_method()
 
 
 # vanilla MLDA
 # ------------
 
-vanillaMLDABuilder = MLDABuilder()
-
-vanillaMLDABuilder.gc.basePropCov = proposalCov
-vanillaMLDABuilder.gc.subChainLengths = [6]
-vanillaMLDABuilder.gc.bayesModel = vanillaModel
-
-vanillaMLDA = vanillaMLDABuilder.gc.build_method()
+mldaBuilder.subChainLengths = [6]
+vanillaMLDA = mldaBuilder.build_method()
 
 
-# adaptive error correction MLDA
+# adaptive error model MLDA
 # ------------------------------
 
-aemMLDABuilder = AdaptiveErrorCorrectionMLDABuilder()
-
-aemMLDABuilder.basePropCov = proposalCov
-aemMLDABuilder.subChainLengths = [6]
-aemMLDABuilder.bayesModel = aemModel
-
-aemMLDA = aemMLDABuilder.build_method()
+mldaBuilder.bayesModel = aemModel
+aemMLDA = mldaBuilder.build_method()
 
 
 # -----------------------------------------------------------------------------
@@ -190,7 +178,7 @@ thinning = integrated_autocorrelation(states, 'mean')
 surMean = np.mean(states[burnin::thinning], axis=0)
 
 # start the actual burn-in chain where the surrogate chain left off
-burnin = states[-1]
+initState = states[-1]
 nSteps = 5000
 
 print(f"\nBurning-in MLDA with {nSteps} steps, starting at last surrogate chain "
@@ -199,7 +187,7 @@ print(f"\nBurning-in MLDA with {nSteps} steps, starting at last surrogate chain 
 mldaBurnin.run(nSteps, initState)
 
 initState = mldaBurnin.chain.trajectory[-1]
-firstInitStateCopy = np.copy(initState)
+initStateCopy = np.copy(initState)
 mldaBurnin.clear()
 
 nSteps = 50000
@@ -208,9 +196,9 @@ print(f"\nRunning {nSteps} steps of vanilla MLDA")
 
 vanillaMLDA.run(nSteps, initState)
 
-print(f"\nRunning {nSteps} of MLDA with an adaptive error model")
+print(f"\nRunning {nSteps} steps of MLDA with an adaptive error model")
 
-assert initState == firstInitStateCopy
+assert initState == initStateCopy
 
 aemMLDA.run(nSteps, initState)
 
@@ -230,6 +218,7 @@ for mcmc, name in [(vanillaMLDA, "vanilla"),
     print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
     print(f"IAT estimate: {thinning}")
     print(f"posterior mean: {posteriorMean}")
+
 
 # -----------------------------------------------------------------------------
 #                                PLOTTING

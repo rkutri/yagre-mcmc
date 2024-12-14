@@ -1,4 +1,4 @@
-from numpy import sqrt, dot, reciprocal, full
+import numpy as np
 from numpy.random import standard_normal, uniform
 from yagremcmc.statistics.interface import CovarianceOperatorInterface, DensityInterface
 from yagremcmc.statistics.parameterLaw import AbsolutelyContinuousParameterLaw
@@ -7,17 +7,19 @@ from yagremcmc.parameter.interface import ParameterInterface
 
 class GaussianDensity(DensityInterface):
 
-    def __init__(self, mean, covariance):
+    def __init__(self, meanVector, covariance: CovarianceOperatorInterface):
 
-        self._mean = mean
+        self._mean = meanVector
         self._cov = covariance
 
-    def evaluate_log(self, state: ParameterInterface) -> float:
+    @property
+    def covariance(self):
+        return self._cov
 
-        x = state.coefficient - self._mean.coefficient
-        Px = self._cov.apply_inverse(x)
+    def evaluate_log(self, vector: np.ndarray) -> float:
 
-        return -0.5 * dot(x, Px)
+        x = vector - self._mean
+        return -0.5 * self._cov.induced_norm_squared(x)
 
 
 class Gaussian(AbsolutelyContinuousParameterLaw):
@@ -40,7 +42,7 @@ class Gaussian(AbsolutelyContinuousParameterLaw):
         self._mean = mean
         self._cov = covariance
 
-        self._density = GaussianDensity(self._mean, self._cov)
+        self._density = GaussianDensity(self._mean.coefficient, self._cov)
 
     @property
     def mean(self):

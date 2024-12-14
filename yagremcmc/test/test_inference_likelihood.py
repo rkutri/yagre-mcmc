@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from yagremcmc.statistics.data import Data
-from yagremcmc.statistics.interface import NoiseModelInterface
 from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
 from yagremcmc.statistics.noise import CentredGaussianNoise
 from yagremcmc.parameter.vector import ParameterVector
@@ -10,6 +9,9 @@ from yagremcmc.utility.memoisation import EvaluationCache
 
 
 class MockNoise(CentredGaussianNoise):
+    def __init__(self):
+        super().__init__(covariance=None)
+
     def induced_norm_squared(self, x):
         return np.sqrt(np.sum(np.square(x)))
 
