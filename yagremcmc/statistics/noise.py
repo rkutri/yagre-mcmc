@@ -6,13 +6,17 @@ from yagremcmc.statistics.covariance import CovarianceMatrix
 class CentredGaussianNoise(NoiseModelInterface):
 
     def __init__(self, covariance: CovarianceMatrix):
+
+        if not isinstance(covariance, CovarianceMatrix):
+            raise ValueError("CentredGaussianNoise need to be instantiated "
+                             f"with CovarianceMatrix. Got: {type(covariance)}")
         self._cov = covariance
 
     def induced_norm_squared(self, vector) -> float:
         return self._cov.induced_norm_squared(vector)
 
 
-class AEMNoise(NoiseModelInterface):
+class AEMNoise(CentredGaussianNoise):
 
     def __init__(self, measurementNoise):
 

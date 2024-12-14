@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from yagremcmc.utility.hierarchy import Hierarchy
+from yagremcmc.utility.hierarchy import HierarchyBase, Hierarchy
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 
 
@@ -41,7 +41,7 @@ class BayesianRegressionModelHierarchy(Hierarchy):
 
         # Validate all are Hierarchy instances
         for name, instance in hierarchies:
-            if not isinstance(instance, Hierarchy):
+            if not isinstance(instance, HierarchyBase):
                 raise ValueError(
                     cls.INVALID_TYPE_MSG.format(name, type(instance).__name__))
 
