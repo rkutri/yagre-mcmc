@@ -4,13 +4,31 @@ import pytest
 from yagremcmc.statistics.data import Data
 from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
 from yagremcmc.statistics.noise import CentredGaussianNoise
+from yagremcmc.statistics.covariance import CovarianceMatrix
 from yagremcmc.parameter.vector import ParameterVector
 from yagremcmc.utility.memoisation import EvaluationCache
 
 
 class MockNoise(CentredGaussianNoise):
+
+    class DummyCovariance(CovarianceMatrix):
+
+        @property
+        def dimension(self):
+            pass
+
+        def apply_chol_factor(self, x):
+            pass
+        
+        def apply_inverse(self, x):
+            pass
+
+        def induced_norm_squared(self, x):
+            pass
+
     def __init__(self):
-        super().__init__(covariance=None)
+
+        super().__init__(covariance=MockNoise.DummyCovariance())
 
     def induced_norm_squared(self, x):
         return np.sqrt(np.sum(np.square(x)))

@@ -25,7 +25,7 @@ def test_acceptance_rate_diagnostics(testLag):
     expectedRate = 0.5
     assert np.isclose(diagnostics.global_acceptance_rate(), expectedRate)
 
-    diagnostics.clear()
+    diagnostics.reset()
     assert diagnostics._decisions == []
 
 

@@ -8,9 +8,9 @@ from yagremcmc.model.forwardModel import ForwardModel
 from yagremcmc.statistics.data import Data
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.statistics.gaussian import Gaussian
-from yagremcmc.statistics.noise import CentredGaussianIIDNoise
+from yagremcmc.statistics.noise import CentredGaussianNoise
 from yagremcmc.statistics.likelihood import (AdditiveGaussianNoiseLikelihood,
-                                             AdaptiveErrorModelLikelihood)
+                                             AEMLikelihood)
 from yagremcmc.statistics.bayesModel import BayesianRegressionModel
 from yagremcmc.statistics.modelHierarchy import BayesianRegressionModelHierarchy
 from yagremcmc.utility.hierarchy import SharedComponent, Hierarchy
@@ -48,9 +48,9 @@ nData = 5
 tgtSolver.interpolate(trueParam)
 tgtSolver.invoke()
 
-data = Data(
+data = Data(np.array(
     [tgtSolver.evaluation + dataNoiseStdDev * standard_normal(DIM)
-        for _ in range(nData)])
+        for _ in range(nData)]))
 
 assert data.size == nData
 assert data.dim == DIM
@@ -76,7 +76,8 @@ prior = Gaussian(priorMean, priorCovariance)
 # -----
 
 noiseMargVar = dataNoiseStdDev**2
-noiseModel = CentredGaussianIIDNoise(noiseMargVar)
+noiseCov = IIDCovarianceMatrix(DIM, noiseMargVar)
+noiseModel = CentredGaussianNoise(noiseCov)
 
 
 # LIKELIHOOD
@@ -90,9 +91,9 @@ vanillaTgtLikelihood = AdditiveGaussianNoiseLikelihood(
 vanillaLikelihood = [vanillaSurLikelihood, vanillaTgtLikelihood]
 
 minDataSize = 500
-aemSurLikelihood = AdaptiveErrorModelLikelihood(
+aemSurLikelihood = AEMLikelihood(
     data, surFwdModel, noiseModel, minDataSize)
-aemTgtLikelihood = AdaptiveErrorModelLikelihood(
+aemTgtLikelihood = AEMLikelihood(
     data, surFwdModel, noiseModel, minDataSize)
 
 aemLikelihood = [aemSurLikelihood, aemTgtLikelihood]
@@ -110,7 +111,7 @@ vanillaLikelihood = Hierarchy(vanillaLikelihood)
 aemLikelihood = Hierarchy(aemLikelihood)
 
 # build models
-surModel = BayesianRegressionModel(vanillaSurLikelihood, prior)
+surModel = BayesianRegressionModel(vanillaSurLikelihood, prior.level(0))
 vanillaModel = BayesianRegressionModelHierarchy(vanillaLikelihood, prior)
 aemModel = BayesianRegressionModelHierarchy(aemLikelihood, prior)
 
@@ -127,7 +128,7 @@ proposalCov = IIDCovarianceMatrix(DIM, proposalMVar)
 
 mrwBuilder = MRWBuilder()
 
-mrwBuilder.proposalCov = proposalCov
+mrwBuilder.proposalCovariance = proposalCov
 mrwBuilder.bayesModel = surModel
 
 surMRW = mrwBuilder.build_method()
@@ -138,7 +139,7 @@ surMRW = mrwBuilder.build_method()
 
 mldaBuilder = MLDABuilder()
 
-mldaBuilder.basePropCov = proposalCov
+mldaBuilder.baseProposalCovariance = proposalCov
 mldaBuilder.subChainLengths = [20]
 mldaBuilder.bayesModel = vanillaModel
 
@@ -148,14 +149,24 @@ mldaBurnin = mldaBuilder.build_method()
 # vanilla MLDA
 # ------------
 
+mldaBuilder = MLDABuilder()
+
+mldaBuilder.baseProposalCovariance = proposalCov
 mldaBuilder.subChainLengths = [6]
+mldaBuilder.bayesModel = vanillaModel
+
 vanillaMLDA = mldaBuilder.build_method()
 
 
 # adaptive error model MLDA
 # ------------------------------
 
+mldaBuilder = MLDABuilder()
+
+mldaBuilder.baseProposalCovariance = proposalCov
+mldaBuilder.subChainLengths = [6]
 mldaBuilder.bayesModel = aemModel
+
 aemMLDA = mldaBuilder.build_method()
 
 
@@ -168,7 +179,7 @@ burnin = 1000
 
 initState = ParameterVector(np.zeros(DIM))
 
-print(f"Running {nSteps} steps of the surrogate MRW")
+print(f"\nRunning {nSteps} steps of the surrogate MRW")
 
 surMRW.run(nSteps, initState)
 states = surMRW.chain.trajectory
@@ -178,25 +189,25 @@ thinning = integrated_autocorrelation(states, 'mean')
 surMean = np.mean(states[burnin::thinning], axis=0)
 
 # start the actual burn-in chain where the surrogate chain left off
-initState = states[-1]
+initState = ParameterVector(states[-1])
 nSteps = 5000
 
-print(f"\nBurning-in MLDA with {nSteps} steps, starting at last surrogate chain "
+print(f"\n\n\nBurning-in MLDA with {nSteps} steps, starting at last surrogate chain "
       "position")
 
 mldaBurnin.run(nSteps, initState)
 
-initState = mldaBurnin.chain.trajectory[-1]
+initState = ParameterVector(mldaBurnin.chain.trajectory[-1])
 initStateCopy = np.copy(initState)
 mldaBurnin.clear()
 
 nSteps = 50000
 
-print(f"\nRunning {nSteps} steps of vanilla MLDA")
+print(f"\n\n\nRunning {nSteps} steps of vanilla MLDA")
 
 vanillaMLDA.run(nSteps, initState)
 
-print(f"\nRunning {nSteps} steps of MLDA with an adaptive error model")
+print(f"\n\n\nRunning {nSteps} steps of MLDA with an adaptive error model")
 
 assert initState == initStateCopy
 

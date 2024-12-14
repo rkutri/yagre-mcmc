@@ -12,7 +12,7 @@ class DummyDiagnostics(ChainDiagnostics):
     def print_diagnostics(self, logger):
         return
 
-    def clear(self):
+    def reset(self):
         return
 
 
@@ -60,7 +60,7 @@ class AcceptanceRateDiagnostics(ChainDiagnostics):
         except RuntimeError as e:
             logger.warning(f"  - Rolling acceptance rate unavailable: {e}")
 
-    def clear(self):
+    def reset(self):
         self._decisions = []
 
 
@@ -102,7 +102,7 @@ class FullDiagnostics(ChainDiagnostics):
         logger.info("  - Estimated condition number: "
                     f"{self._accumulator.condition_number():.4f}")
 
-    def clear(self):
+    def reset(self):
 
-        self._diagnostics.clear()
+        self._diagnostics.reset()
         self._accumulator.reset()
