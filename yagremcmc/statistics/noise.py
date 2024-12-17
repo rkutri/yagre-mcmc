@@ -1,4 +1,4 @@
-from numpy import dot, reciprocal
+from numpy import max, min, dot, reciprocal
 from yagremcmc.statistics.interface import NoiseModelInterface
 from yagremcmc.statistics.covariance import (CovarianceMatrix,
                                              DiagonalCovarianceMatrix)
@@ -23,7 +23,7 @@ class CentredGaussianNoise(NoiseModelInterface):
 
 class AEMNoise(CentredGaussianNoise):
 
-    def __init__(self, measurementNoise):
+    def __init__(self, measurementNoise, useHeuristic):
 
         if not isinstance(measurementNoise.covariance,
                           DiagonalCovarianceMatrix):
@@ -33,11 +33,20 @@ class AEMNoise(CentredGaussianNoise):
 
         self._dataNoise = measurementNoise
         self._aemNoise = None
+        self._useHeuristic = useHeuristic
+
+    def scaling_heuristic(mVar):
+
+        return 2. * max(mVar) / min(mVar)
+
 
     def set_error_marginal_variance(self, mVar):
 
+        noiseScaling = AEMNoise.scaling_heuristic(mVar) \
+            if self._useHeuristic else 1.
+
         aemCov = DiagonalCovarianceMatrix(
-            12. * mVar + self._dataNoise.covariance.marginalVariance)
+            noiseScaling * mVar + self._dataNoise.covariance.marginalVariance)
         self._aemNoise = CentredGaussianNoise(aemCov)
 
     def induced_norm_squared(self, vector):

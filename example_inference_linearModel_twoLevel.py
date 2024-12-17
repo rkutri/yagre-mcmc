@@ -17,6 +17,7 @@ from yagremcmc.utility.hierarchy import SharedComponent, Hierarchy
 from yagremcmc.chain.method.mrw import MRWBuilder
 from yagremcmc.chain.method.mlda import MLDABuilder
 from yagremcmc.chain.method.aem import AEMBuilder
+from yagremcmc.chain.diagnostics import FullDiagnostics
 from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 
@@ -92,10 +93,11 @@ vanillaTgtLikelihood = AdditiveGaussianNoiseLikelihood(
 vanillaLikelihood = [vanillaSurLikelihood, vanillaTgtLikelihood]
 
 minDataSize = 100
+useNoiseHeuristic = True
 aemSurLikelihood = AEMLikelihood(
-    data, surFwdModel, noiseModel, minDataSize)
+    data, surFwdModel, noiseModel, minDataSize, useNoiseHeuristic)
 aemTgtLikelihood = AEMLikelihood(
-    data, tgtFwdModel, noiseModel, minDataSize)
+    data, tgtFwdModel, noiseModel, minDataSize, useNoiseHeuristic)
 
 aemLikelihood = [aemSurLikelihood, aemTgtLikelihood]
 
@@ -183,6 +185,7 @@ aemBuilder = AEMBuilder()
 aemBuilder.baseProposalCovariance = proposalCov
 aemBuilder.subChainLengths = [5]
 aemBuilder.bayesModel = aemModel
+aemBuilder.targetDiagnostics = FullDiagnostics()
 
 print("\nrequest building aem mlda")
 aemMLDA = aemBuilder.build_method()
@@ -286,6 +289,8 @@ print(f"estimated mean error: {aemSurLikelihood.accumulator.mean()}")
 
 print("\nAEM DETAILS:")
 
+print(
+    f"Estimated Marginal Variance of posterior: {aemMLDA.diagnostics.marginal_variance()}")
 print("Total number of carried out surrogate evaluations: "
       f"{aemSurLikelihood.number_of_model_evaluations()}")
 print("Total number of carried out target evaluations: "
@@ -454,7 +459,7 @@ ax[3].scatter(aMLDAPostMean[0], aMLDAPostMean[1], color='black', s=100,
               marker='P', label='estimated posterior mean')
 
 # Add labels, legend, and grid
-ax[3].set_title('MLDA with AEM', fontsize=24)
+ax[3].set_title('MLDA with AEM + noise scaling', fontsize=24)
 ax[3].set_xlabel('X')
 ax[3].set_ylabel('Y')
 ax[3].legend(fontsize=14)

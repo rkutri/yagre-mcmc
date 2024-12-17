@@ -98,7 +98,6 @@ class FullDiagnostics(ChainDiagnostics):
         self._diagnostics.lag = self._lag
         self._diagnostics.print_diagnostics(logger)
 
-        logger.info(f"  - Estimated mean: {self._accumulator.mean()}")
         logger.info("  - Estimated condition number: "
                     f"{self._accumulator.condition_number():.4f}")
 

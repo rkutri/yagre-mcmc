@@ -89,7 +89,12 @@ class AdditiveGaussianNoiseLikelihood(AdditiveNoiseLikelihood):
 
 class AEMLikelihood(AdditiveGaussianNoiseLikelihood):
 
-    def __init__(self, data, forwardModel, noiseModel, minDataSize):
+    def __init__(self,
+                 data,
+                 forwardModel,
+                 noiseModel,
+                 minDataSize,
+                 useNoiseHeuristic=False):
 
         if minDataSize < 2:
             raise ValueError("Smallest senisible data size for AEM is 2.")
@@ -97,7 +102,7 @@ class AEMLikelihood(AdditiveGaussianNoiseLikelihood):
         self._minDataSize = minDataSize
         self._accumulator = WelfordAccumulator()
 
-        noiseModel = AEMNoise(noiseModel)
+        noiseModel = AEMNoise(noiseModel, useNoiseHeuristic)
         super().__init__(data, forwardModel, noiseModel)
 
         self._cache = AEMCache()
