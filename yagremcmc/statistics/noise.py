@@ -1,6 +1,7 @@
 from numpy import dot, reciprocal
 from yagremcmc.statistics.interface import NoiseModelInterface
-from yagremcmc.statistics.covariance import CovarianceMatrix
+from yagremcmc.statistics.covariance import (CovarianceMatrix,
+                                             DiagonalCovarianceMatrix)
 
 
 class CentredGaussianNoise(NoiseModelInterface):
@@ -12,6 +13,10 @@ class CentredGaussianNoise(NoiseModelInterface):
                              f"with CovarianceMatrix. Got: {type(covariance)}")
         self._cov = covariance
 
+    @property
+    def covariance(self):
+        return self._cov
+
     def induced_norm_squared(self, vector) -> float:
         return self._cov.induced_norm_squared(vector)
 
@@ -20,19 +25,24 @@ class AEMNoise(CentredGaussianNoise):
 
     def __init__(self, measurementNoise):
 
+        if not isinstance(measurementNoise.covariance,
+                          DiagonalCovarianceMatrix):
+            raise NotImplementedError(
+                "Currently, AEM is only implemented for independent "
+                "measurement noise.")
+
         self._dataNoise = measurementNoise
-        self._errorMVar = None
+        self._aemNoise = None
+
+    def set_error_marginal_variance(self, mVar):
+
+        aemCov = DiagonalCovarianceMatrix(
+            12. * mVar + self._dataNoise.covariance.marginalVariance)
+        self._aemNoise = CentredGaussianNoise(aemCov)
 
     def induced_norm_squared(self, vector):
 
-        dataNSq = self._dataNoise.induced_norm_squared(vector)
+        if self._aemNoise is None:
+            return self._dataNoise.induced_norm_squared(vector)
 
-        if self._errorMVar is None:
-            return dataNSq
-
-        errorNSq = reciprocal(self._errorMVar) * vector
-
-        return dataNSq + errorNSq
-
-    def set_error_marginal_variance(self, mVar):
-        self._errorMVar = mVar
+        return self._aemNoise.induced_norm_squared(vector)

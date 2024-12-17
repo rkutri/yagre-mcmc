@@ -16,7 +16,9 @@ class GaussianDensity(DensityInterface):
     def covariance(self):
         return self._cov
 
-    def evaluate_log(self, vector: np.ndarray) -> float:
+    def evaluate_log(self, parameter: ParameterInterface) -> float:
+
+        vector = parameter.coefficient
 
         x = vector - self._mean
         return -0.5 * self._cov.induced_norm_squared(x)

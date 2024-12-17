@@ -3,7 +3,8 @@ import numpy as np
 from abc import abstractmethod
 from typing import Any
 from yagremcmc.parameter.interface import ParameterInterface
-from yagremcmc.utility.memoisation import EvaluationCache
+from yagremcmc.utility.memoisation import EvaluationCache, AEMCache
+from yagremcmc.model.evaluation import AEMEvaluation
 from yagremcmc.statistics.interface import DensityInterface
 from yagremcmc.statistics.noise import CentredGaussianNoise, AEMNoise
 from yagremcmc.statistics.estimation import WelfordAccumulator
@@ -17,37 +18,37 @@ class AdditiveNoiseLikelihood(DensityInterface):
         self._fwdModel = forwardModel
         self._noiseModel = noiseModel
 
-        # Cache for memoized evaluation of likelihood
-        cacheSize = 8
-        self._llCache = EvaluationCache(cacheSize)
+    @abstractmethod
+    def query_model_evaluation(self, parameter: ParameterInterface):
+        pass
 
     @abstractmethod
-    def process_model_evaluation(self, parameter: ParameterInterface):
+    def query_log_likelihood(self, parameter: ParameterInterface):
         pass
 
     @abstractmethod
     def compute_residual(self, modelEval: Any):
         pass
 
+    def compute_residual_norm_squared(self, forwardModelEval):
+
+        def norm_squared(x):
+            return self._noiseModel.induced_norm_squared(x)
+
+        residual = self.compute_residual(forwardModelEval)
+        return np.apply_along_axis(norm_squared, 1, residual)
+
     @abstractmethod
     def compute_log_likelihood(self, parameter: ParameterInterface):
         pass
 
     def evaluate_log(self, parameter: ParameterInterface):
-
-        if self._llCache.contains(parameter):
-            return self._llCache(parameter)
-
-        modelEval = self.process_model_evaluation(parameter)
-        residual = self.compute_residual(modelEval)
-
-        logL = self.compute_log_likelihood(residual)
-        self._llCache.add(parameter, logL)
-
-        return logL
+        return self.query_log_likelihood(parameter)
 
 
 class AdditiveGaussianNoiseLikelihood(AdditiveNoiseLikelihood):
+
+    CACHESIZE = 5
 
     def __init__(self, data, forwardModel, noiseModel):
 
@@ -57,74 +58,93 @@ class AdditiveGaussianNoiseLikelihood(AdditiveNoiseLikelihood):
 
         super().__init__(data, forwardModel, noiseModel)
 
-    def process_model_evaluation(self, parameter):
+        self._llCache = EvaluationCache(
+            AdditiveGaussianNoiseLikelihood.CACHESIZE)
+
+    def query_model_evaluation(self, parameter):
         return self._fwdModel.evaluate(parameter)
+
+    def query_log_likelihood(self, parameter):
+
+        if self._llCache.contains(parameter):
+            return self._llCache.retrieve(parameter)
+
+        return self.compute_log_likelihood(parameter)
 
     def compute_residual(self, modelEval):
         return modelEval - self._data.array
 
-    def compute_log_likelihood(self, residual):
+    def compute_log_likelihood(self, parameter):
 
-        residualNormSq = np.apply_along_axis(
-            lambda x: self._noiseModel.induced_norm_squared(x), 1, residual)
+        fmEval = self.query_model_evaluation(parameter)
+        logL = -0.5 * np.sum(self.compute_residual_norm_squared(fmEval))
 
-        return -0.5 * np.sum(residualNormSq)
+        self.update_cache(parameter, fmEval, logL)
+
+        return logL
+
+    def update_cache(self, parameter, fmEval, logL):
+        self._llCache.add(parameter, logL)
 
 
 class AEMLikelihood(AdditiveGaussianNoiseLikelihood):
 
     def __init__(self, data, forwardModel, noiseModel, minDataSize):
 
+        if minDataSize < 2:
+            raise ValueError("Smallest senisible data size for AEM is 2.")
+
         self._minDataSize = minDataSize
-        self._errorEstimator = WelfordAccumulator()
+        self._accumulator = WelfordAccumulator()
 
         noiseModel = AEMNoise(noiseModel)
         super().__init__(data, forwardModel, noiseModel)
 
-        fwdEvalCacheSize = 2
-        self._fwdEvalCache = EvaluationCache(fwdEvalCacheSize)
+        self._cache = AEMCache()
+        self._nModelEvaluations = 0
 
-    def update_error_estimate(self, errorRealisation):
+    @property
+    def accumulator(self):
+        return self._accumulator
 
-        self._errorEstimator.update(errorRealisation)
+    def number_of_model_evaluations(self):
+        return self._nModelEvaluations
 
-        mVar = self._errorEstimator.marginal_variance()
-        self._noiseModel.set_error_marginal_variance(mVar)
+    def query_model_evaluation(self, parameter: ParameterInterface):
 
-    def cached_model_evaluation(self, parameter):
+        if self._cache.contains(parameter):
+            return self._cache.retrieve(parameter)[0]
 
-        if self._fwdEvalCache.contains(parameter):
-            return self._fwdEvalCache(parameter)
-        else:
-            raise RuntimeError("Cache miss for forward model evaluation at "
-                               f"parameter coefficient: {parameter.coefficient}.\n"
-                               "last cached values for: \n"
-                               f"p0 = {self._fwdEvalCache.keys[0].coefficient} \n"
-                               f"p1 = {self._fwdEvalCache.keys[1].coefficient}")
+        self._nModelEvaluations += 1
+        return self._fwdModel.evaluate(parameter)
 
-    def process_model_evaluation(self, parameter):
+    def query_log_likelihood(self, parameter: ParameterInterface):
 
-        if self._fwdEvalCache.contains(parameter):
-            return self._fwdEvalCache(parameter)
+        if self._cache.contains(parameter):
+            return self._cache.retrieve(parameter)[1]
 
-        modelEval = self._fwdModel.evaluate(parameter)
-        self._fwdEvalCache.add(parameter, modelEval)
-
-        return modelEval
+        return self.compute_log_likelihood(parameter)
 
     def compute_residual(self, modelEval):
 
-        if self._errorEstimator.nData < self._minDataSize:
+        if self._accumulator.nData < self._minDataSize:
             return super().compute_residual(modelEval)
 
-        return modelEval + self._errorEstimator.mean() - self._data.array
+        return super().compute_residual(modelEval) + self._accumulator.mean()
 
-    def compute_log_likelihood(self, residual):
+    def update_cache(self, parameter, fmEval, logL):
 
-        if self._errorEstimator.nData < self._minDataSize:
-            return super().compute_log_likelihood(residual)
+        if self._cache.contains(parameter):
+            return
 
-        residualNormSq = np.apply_along_axis(
-            lambda x: self._sumNoiseModel.induced_norm_squared(x), 1, residual)
+        aemEval = AEMEvaluation(fmEval, logL)
+        self._cache.add(parameter, aemEval)
 
-        return -0.5 * np.sum(residualNormSq)
+    def update_error_estimate(self, errorRealisation):
+
+        self._accumulator.update(errorRealisation)
+
+        if self._accumulator.nData > self._minDataSize:
+
+            mVar = self._accumulator.marginal_variance()
+            self._noiseModel.set_error_marginal_variance(mVar)

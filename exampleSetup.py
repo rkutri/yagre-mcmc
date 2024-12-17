@@ -1,5 +1,8 @@
+import numpy as np
+
 from yagremcmc.model.interface import SolverInterface
 from yagremcmc.model.evaluation import EvaluationStatus
+from yagremcmc.parameter.vector import ParameterVector
 
 
 class ExampleLinearModelSolver(SolverInterface):
@@ -48,5 +51,21 @@ class ExampleLinearModelSolver(SolverInterface):
             self._status = EvaluationStatus.FAILURE
             print("WARNING: Forward Model evaluation failed: " + str(e))
 
-    def explicit_posterior(self, theta):
-        pass
+
+def evaluate_posterior(mesh, likelihood, prior):
+
+    posterior = np.zeros(mesh.shape[:2])
+
+    for i in range(mesh.shape[0]):
+        for j in range(mesh.shape[1]):
+            theta = mesh[i, j]
+            thetaParam = ParameterVector(theta)
+
+            logPost = likelihood.evaluate_log(thetaParam) \
+                + prior.density.evaluate_log(thetaParam)
+            posterior[i, j] = np.exp(logPost)
+
+    # normalise
+    integral = np.sum(posterior)
+
+    return posterior / integral

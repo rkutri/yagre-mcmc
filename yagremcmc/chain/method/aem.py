@@ -1,13 +1,28 @@
 from yagremcmc.chain.method.mlda import MLDA, MLDABuilder
-from yagremcmc.statistics.likelihood import AdaptiveErrorCorrection
+from yagremcmc.statistics.likelihood import AEMLikelihood
 from yagremcmc.chain.transition import TransitionData
 
 
-class AdaptiveErrorCorrectionMLDA(MLDA):
+class AdaptiveErrorModel(MLDA):
+
+    def __init__(self,
+                 targetDensity,
+                 surrogateDensities,
+                 baseProposalCov,
+                 nSteps,
+                 targetDiagnostics,
+                 surrogateDiagnostics):
+
+        print("CONSTRUCTING ADAPTIVE ERROR MODEL MLDA")
+
+        super().__init__(targetDensity,
+                         surrogateDensities,
+                         baseProposalCov,
+                         nSteps,
+                         targetDiagnostics,
+                         surrogateDiagnostics)
 
     def _process_transition(self, transitionData):
-
-        super()._process_transition(transitionData)
 
         if transitionData.outcome == TransitionData.ACCEPTED:
 
@@ -17,12 +32,12 @@ class AdaptiveErrorCorrectionMLDA(MLDA):
 
                 coarseSurrogate = super().surrogate(k)
                 coarseModelEval = \
-                    coarseSurrogate.target.likelihood.cached_model_evaluation(
+                    coarseSurrogate.target.likelihood.d_model_evaluation(
                         transitionData.proposal)
 
                 fineSurrogate = super().surrogate(k + 1)
                 fineModelEval = \
-                    fineSurrogate.target.likelihood.cached_model_evaluation(
+                    fineSurrogate.target.likelihood.query_model_evaluation(
                         transitionData.proposal)
 
                 error = fineModelEval - coarseModelEval
@@ -31,21 +46,23 @@ class AdaptiveErrorCorrectionMLDA(MLDA):
             surrogate = super().surrogate(-1)
 
             surrogateModelEval = \
-                surrogate.target.likelihood.cached_model_evaluation(
+                surrogate.target.likelihood.query_model_evaluation(
                     transitionData.proposal)
             targetModelEval = \
-                self._targetDensity.likelihood.cached_model_evaluation(
+                self._tgtDensity.likelihood.query_model_evaluation(
                     transitionData.proposal)
 
             error = targetModelEval - surrogateModelEval
             surrogate.target.likelihood.update_error_estimate(error)
 
+        return super()._process_transition(transitionData)
 
-class AdaptiveErrorCorrectionMLDABuilder(MLDABuilder):
+
+class AEMBuilder(MLDABuilder):
 
     def __init__(self):
 
-        super().__init__(self)
+        super().__init__()
 
     def _validate_parameters(self):
 
@@ -58,5 +75,8 @@ class AdaptiveErrorCorrectionMLDABuilder(MLDABuilder):
 
         for i in range(self._bayesModel.size):
             if not isinstance(self._bayesModel.level(
-                    i).likelihood, AdaptiveErrorCorrection):
+                    i).likelihood, AEMLikelihood):
                 raise ValueError(f"Likelihood on level {i} is not adaptive.")
+
+    def build_mlda(self, tgtPost, surPost, bpc, nS, tgtD, surD):
+        return AdaptiveErrorModel(tgtPost, surPost, bpc, nS, tgtD, surD)

@@ -42,6 +42,8 @@ class MetropolisedRandomWalk(MetropolisHastings):
 
     def __init__(self, targetDensity, proposalCov, diagnostics):
 
+        print("CONSTRUCTING METROPOLISED RANDOM WALK")
+
         proposalMethod = MRWProposal(proposalCov)
 
         super().__init__(targetDensity, proposalMethod, diagnostics)

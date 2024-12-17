@@ -37,6 +37,14 @@ class DiagonalCovarianceMatrix(CovarianceMatrix):
         self._precision = np.reciprocal(marginalVariances)
 
     @property
+    def marginalVariance(self):
+        return np.reciprocal(self._precision)
+
+    @marginalVariance.setter
+    def marginalVariance(self, mVar):
+        self._precision = np.reciprocal(mVar)
+
+    @property
     def dimension(self):
         return self._precision.size
 

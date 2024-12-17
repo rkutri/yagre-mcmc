@@ -123,6 +123,8 @@ class MLDA(MetropolisHastings):
             self, targetDensity, surrogateDensities, baseProposalCov, nSteps,
             targetDiagnostics, surrogateDiagnosticsList):
 
+        print("CONSTRUCTING VANILLA MLDA")
+
         self._finestTarget = surrogateDensities[-1]
 
         proposal = MLDAProposal(
@@ -307,6 +309,9 @@ class MLDABuilder(ChainBuilder):
                 surrogateTgts[idx] = BiasCorrection(
                     tgt, self._biasCorrection[idx])
 
+    def build_mlda(self, tgtPost, surPost, bpc, nS, tgtD, surD):
+        return MLDA(tgtPost, surPost, bpc, nS, tgtD, surD)
+
     def build_from_model(self):
 
         self._validate_parameters()
@@ -321,19 +326,19 @@ class MLDABuilder(ChainBuilder):
         self.finalise_surrogate_targets(surrogatePosteriors)
         self.create_diagnostics(nSurrogates)
 
-        return MLDA(targetPosterior,
-                    surrogatePosteriors,
-                    self._basePropCov,
-                    self._nSteps,
-                    self._tgtDgnst,
-                    self._surrDgnstList
-                    )
+        return self.build_mlda(targetPosterior,
+                               surrogatePosteriors,
+                               self._basePropCov,
+                               self._nSteps,
+                               self._tgtDgnst,
+                               self._surrDgnstList
+                               )
 
     def build_from_target(self):
 
         self.finalise_surrogate_targets(self._surrTgts)
         self.create_diagnostics(len(self._surrTgts))
 
-        return MLDA(self._explicitTarget, self._surrTgts,
-                    self._basePropCov, self._nSteps,
-                    self._tgtDgnst, self._surrDgnstList)
+        return self.build_mlda(self._explicitTarget, self._surrTgts,
+                               self._basePropCov, self._nSteps,
+                               self._tgtDgnst, self._surrDgnstList)

@@ -34,7 +34,7 @@ class BayesianRegressionModelHierarchy(Hierarchy):
             hierarchies: A list of (name, Hierarchy) pairs to validate.
 
         Raises:
-            ValueError: If any hierarchy is not a `Hierarchy` instance or if 
+            ValueError: If any hierarchy is not a `Hierarchy` instance or if
                         sizes are inconsistent.
         """
         sizeDict = {name: instance.size for name, instance in hierarchies}
