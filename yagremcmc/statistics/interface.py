@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from numpy import ndarray
 from yagremcmc.parameter.interface import ParameterInterface
 
 
@@ -18,15 +19,6 @@ class ParameterLawInterface(ABC):
 
 class CovarianceOperatorInterface(ABC):
 
-    @property
-    @abstractmethod
-    def dimension(self):
-        pass
-
-    @abstractmethod
-    def apply_chol_factor(self, x):
-        pass
-
     @abstractmethod
     def apply_inverse(self, x):
         pass
@@ -34,17 +26,19 @@ class CovarianceOperatorInterface(ABC):
 
 class BayesianModelInterface(ABC):
 
+    @property
     @abstractmethod
-    def log_prior(self, parameter: ParameterInterface) -> float:
+    def likelihood(self) -> DensityInterface:
         pass
 
+    @property
     @abstractmethod
-    def log_likelihood(self, parameter: ParameterInterface) -> float:
+    def prior(self) -> ParameterLawInterface:
         pass
 
 
 class NoiseModelInterface(ABC):
 
     @abstractmethod
-    def induced_norm_squared(self, vector):
+    def induced_norm_squared(self, vector) -> float:
         pass

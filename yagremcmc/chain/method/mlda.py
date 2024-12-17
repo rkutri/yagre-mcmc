@@ -4,21 +4,21 @@ from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.metropolisHastings import MetropolisHastings
 from yagremcmc.chain.method.mrw import MetropolisedRandomWalk
 from yagremcmc.chain.builder import ChainBuilder
-from yagremcmc.chain.target import UnnormalisedPosterior
+from yagremcmc.chain.target import UnnormalisedPosterior, BiasCorrection
+from yagremcmc.chain.diagnostics import DummyDiagnostics, AcceptanceRateDiagnostics
 from yagremcmc.utility.hierarchy import Hierarchy
 
 
-class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
+class SurrogateTransition(MetropolisHastings, ProposalMethod):
 
-    def __init__(self, targetDensity, proposalMethod, nSteps):
+    def __init__(self, targetDensity, proposalMethod, diagnostics, nSteps):
 
         if not isinstance(proposalMethod, MetropolisHastings):
-            raise ValueError("Proposal method of surrogate transiton needs"
+            raise ValueError("Proposal method of surrogate transition needs"
                              " to be derived from MetropolisHastings")
 
-        super().__init__(targetDensity, proposalMethod)
-
-        self._nSteps = nSteps
+        super().__init__(targetDensity, proposalMethod, diagnostics)
+        self._chainLength = nSteps + 1
 
     def generate_proposal(self):
 
@@ -26,9 +26,9 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
             raise ValueError(
                 "Trying to generate proposal with undefined state")
 
-        # the proposal method of surrogate transition is always itself
-        # derived from a Metropolis-Hastings algorithm
-        self._proposalMethod.run(self._nSteps + 1, self._state, verbose=False)
+        # the proposal method of surrogate transition is always itself derived
+        # from a Metropolis-Hastings algorithm, so it provides a run() method
+        self._proposalMethod.run(self._chainLength, self._state, verbose=False)
 
         return self._stateType(self._proposalMethod.chain.trajectory[-1])
 
@@ -43,85 +43,105 @@ class SurrogateTransitionProposal(MetropolisHastings, ProposalMethod):
         return ratio if ratio < 1. else 1.
 
 
+class SurrogateHierarchy(Hierarchy):
+
+    def __init__(self, tgtMeasures, diagnosticsList, basePropCov, nSteps):
+
+        nLevels = len(tgtMeasures)
+
+        if nLevels == 0:
+            raise ValueError("Surrogate hierarchy must contain at least one "
+                             "surrogate.")
+
+        if not len(diagnosticsList) == nLevels:
+            raise ValueError("Mismatch in number of surrogate targets and "
+                             "corresponding chain diagnostics")
+
+        hierarchy = [
+            MetropolisedRandomWalk(
+                tgtMeasures[0],
+                basePropCov,
+                diagnosticsList[0])]
+
+        for level in range(1, nLevels):
+            hierarchy.append(SurrogateTransition(
+                tgtMeasures[level],
+                hierarchy[level - 1],
+                diagnosticsList[level],
+                nSteps[level]))
+
+        super().__init__(hierarchy)
+
+
 class MLDAProposal(ProposalMethod):
     """
     Represents a composite proposal and is purely a ProposalMethod.
     """
 
-    def __init__(self, surrTgtMeasures, nSteps, baseProposalCov):
-        """
-        surrTgtMeasures: DensityInterface
+    def __init__(self, surrogateTargets, surrogateDiagnostics,
+                 baseProposalCov, nSteps):
 
-            Measures to be used as targets for the surrogate transitions. Does
-            not include the final target measure of the entire chain.
-        """
+        self._surrogateHierarchy = SurrogateHierarchy(
+            surrogateTargets, surrogateDiagnostics, baseProposalCov, nSteps)
 
-        self._nSurrogates = len(surrTgtMeasures)
+        self._baseChainLength = nSteps[0] + 1
 
-        assert len(nSteps) > 0 and len(nSteps) == self._nSurrogates
+    def surrogate(self, sIdx):
 
-        self._surrogateHierarchy = None
-        self._baseSurrogate = self._build_base_surrogate(
-            surrTgtMeasures[0], nSteps[0], baseProposalCov)
+        if sIdx < -1 or sIdx >= self._surrogateHierarchy.size:
+            raise IndexError(f"invalid surrogate index: {sIdx}")
 
-        if self._nSurrogates > 1:
-            self._surrogateHierarchy = self._build_surrogate_hierarchy(
-                surrTgtMeasures, nSteps)
+        return self._surrogateHierarchy.level(sIdx)
+
+    @property
+    def nSurrogates(self):
+        return self._surrogateHierarchy.size
 
     def generate_proposal(self):
 
-        # base chain is the only surrogate, and thus surrogateHierarchy
-        # is empty
-        if self._surrogateHierarchy is None:
+        if self.nSurrogates == 1:
 
-            self._baseSurrogate.run(
-                self._baseChainLength, self._state, verbose=False)
+            surrogate = self._surrogateHierarchy.level(0)
 
-            return self._stateType(self._baseSurrogate.chain.trajectory[-1])
+            surrogate.run(
+                self._baseChainLength,
+                self._state,
+                verbose=False)
+            return self._stateType(surrogate.chain.trajectory[-1])
 
         else:
 
-            self._surrogateHierarchy[-1].set_state(self._state)
-            return self._surrogateHierarchy[-1].generate_proposal()
+            surrogate = self._surrogateHierarchy.level(-1)
+            surrogate.set_state(self._state)
 
-    def _build_base_surrogate(self, tgtDensity, nSteps, propCov):
-
-        # as the chain includes the initial state, the total length is the
-        # number of steps + 1
-        self._baseChainLength = nSteps + 1
-
-        return MetropolisedRandomWalk(tgtDensity, propCov)
-
-    def _build_surrogate_hierarchy(self, surrTgtMeasures, nSteps):
-
-        hierarchy = []
-
-        # proposal for the next level is the MRW on the lowest level
-        hierarchy.append(
-            SurrogateTransitionProposal(
-                surrTgtMeasures[1], self._baseSurrogate, nSteps[1]))
-
-        # the remaining levels consist of surrogate transition proposals,
-        # where each one uses the next baser one as its own proposal
-        for i in range(2, self._nSurrogates):
-            hierarchy.append(
-                SurrogateTransitionProposal(surrTgtMeasures[i],
-                                            hierarchy[i - 2],
-                                            nSteps[i]))
-
-        return hierarchy
+            return surrogate.generate_proposal()
 
 
 class MLDA(MetropolisHastings):
 
-    def __init__(self, targetDensity, surrogateDensities,
-                 baseProposalCov, nSteps):
+    def __init__(
+            self, targetDensity, surrogateDensities, baseProposalCov, nSteps,
+            targetDiagnostics, surrogateDiagnosticsList):
+
+        print("CONSTRUCTING VANILLA MLDA")
 
         self._finestTarget = surrogateDensities[-1]
 
-        proposal = MLDAProposal(surrogateDensities, nSteps, baseProposalCov)
+        proposal = MLDAProposal(
+            surrogateDensities,
+            surrogateDiagnosticsList,
+            baseProposalCov,
+            nSteps
+        )
 
-        super().__init__(targetDensity, proposal)
+        super().__init__(targetDensity, proposal, targetDiagnostics)
+
+    @property
+    def nSurrogates(self):
+        return self._proposalMethod.nSurrogates
+
+    def surrogate(self, sIdx):
+        return self._proposalMethod.surrogate(sIdx)
 
     def _acceptance_probability(self, proposal, state):
 
@@ -143,6 +163,9 @@ class MLDABuilder(ChainBuilder):
         self._basePropCov = None
         self._nSteps = None
         self._surrTgts = None
+        self._surrDgnstList = None
+        self._tgtDgnst = None
+        self._biasCorrection = None
 
     @property
     def baseProposalCovariance(self):
@@ -168,7 +191,37 @@ class MLDABuilder(ChainBuilder):
     def surrogateTargets(self, tgts):
         self._surrTgts = tgts
 
+    @property
+    def targetDiagnostics(self):
+        return self._tgtDgnst
+
+    @targetDiagnostics.setter
+    def targetDiagnostics(self, diagnostics):
+        self._tgtDgnst = diagnostics
+
+    @property
+    def surrogateDiagnostics(self):
+        return self._surrDgnstList
+
+    @surrogateDiagnostics.setter
+    def surrogateDiagnostics(self, surrDgnstList):
+        self._surrDgnstList = surrDgnstList
+
+    @property
+    def biasCorrection(self):
+        return self._biasCorrection
+
+    @biasCorrection.setter
+    def biasCorrection(self, bias):
+        self._biasCorrection = bias
+
     def _validate_parameters(self):
+
+        if self._basePropCov is None:
+            raise ValueError("Coarse proposal covariance not set for MLDA")
+
+        if self._nSteps is None:
+            raise ValueError("Subchain lengths not set for MLDA")
 
         if self._bayesModel is not None:
 
@@ -181,8 +234,17 @@ class MLDABuilder(ChainBuilder):
 
             if not len(self._nSteps) == self._bayesModel.size - 1:
                 raise ValueError("Number of sub-chain lengths does not match "
-                    "the size of the model hierarchy.")
+                                 "the size of the model hierarchy.")
 
+            if self._biasCorrection is not None:
+                if not len(self._biasCorrection) == self._bayesModel.size - 1:
+                    raise ValueError("Number of bias corrections does not "
+                                     " match the size of the model hierarchy")
+
+            if self._surrDgnstList is not None:
+                if not len(self._surrDgnstList) == self._bayesModel.size - 1:
+                    raise ValueError("Number of diagnostics does not match "
+                                     "the size of the model hierarchy")
 
         if self._explicitTarget is not None:
 
@@ -194,32 +256,89 @@ class MLDABuilder(ChainBuilder):
                     "Number of sub-chain lengths does not match number of "
                     "surrogate targets")
 
-        if self._basePropCov is None:
-            raise ValueError("Coarse proposal covariance not set for MLDA")
+            if self._surrDgnstList is not None:
+                if not len(self._surrDgnstList) == len(self._surrTgts):
+                    raise ValueError("Number of diagnostics does not match "
+                                     "the size of the model hierarchy")
 
-        if self._nSteps is None:
-            raise ValueError("Subchain lengths not set for MLDA")
-
+            if self._biasCorrection is not None:
+                if not len(self._biasCorrection) == len(self._surrTgts):
+                    raise ValueError("Number of bias corrections does not "
+                                     " match the number of surrogate targets")
 
         return
+
+    def create_diagnostics(self, nSurrogates):
+
+        if self._tgtDgnst is None:
+            self._tgtDgnst = AcceptanceRateDiagnostics()
+
+        if self._surrDgnstList is None:
+            self._surrDgnstList = [DummyDiagnostics()
+                                   for _ in range(nSurrogates)]
+
+        return
+
+    def _construct_surrogate_posteriors(self, nSurrogates):
+
+        surrogateDensities = []
+
+        for k in range(nSurrogates):
+
+            surrogatePosterior = UnnormalisedPosterior(
+                self._bayesModel.level(k).likelihood,
+                self._bayesModel.level(k).prior)
+
+            if self._biasCorrection is None:
+                surrogateDensities.append(surrogatePosterior)
+
+            else:
+
+                correction = self._biasCorrection[k]
+                surrogateDensities.append(
+                    BiasCorrection(surrogatePosterior, correction))
+
+        return surrogateDensities
+
+    def finalise_surrogate_targets(self, surrogateTgts):
+
+        if self._biasCorrection is None:
+            return
+        else:
+            for idx, tgt in enumerate(surrogateTgts):
+                surrogateTgts[idx] = BiasCorrection(
+                    tgt, self._biasCorrection[idx])
+
+    def build_mlda(self, tgtPost, surPost, bpc, nS, tgtD, surD):
+        return MLDA(tgtPost, surPost, bpc, nS, tgtD, surD)
 
     def build_from_model(self):
 
         self._validate_parameters()
 
-        targetDensity = UnnormalisedPosterior(self._bayesModel.target)
+        targetPosterior = UnnormalisedPosterior(
+            self._bayesModel.level(-1).likelihood,
+            self._bayesModel.level(-1).prior)
 
-        surrogateDensities = []
+        nSurrogates = self._bayesModel.size - 1
+        surrogatePosteriors = self._construct_surrogate_posteriors(nSurrogates)
 
-        for k in range(self._bayesModel.size - 1):
-            surrogateDensities.append(UnnormalisedPosterior(self._bayesModel.level(k)))
+        self.finalise_surrogate_targets(surrogatePosteriors)
+        self.create_diagnostics(nSurrogates)
 
-        return MLDA(targetDensity, surrogateDensities,
-                    self._basePropCov, self._nSteps)
+        return self.build_mlda(targetPosterior,
+                               surrogatePosteriors,
+                               self._basePropCov,
+                               self._nSteps,
+                               self._tgtDgnst,
+                               self._surrDgnstList
+                               )
 
     def build_from_target(self):
 
-        self._validate_parameters()
+        self.finalise_surrogate_targets(self._surrTgts)
+        self.create_diagnostics(len(self._surrTgts))
 
-        return MLDA(self._explicitTarget, self._surrTgts,
-                    self._basePropCov, self._nSteps)
+        return self.build_mlda(self._explicitTarget, self._surrTgts,
+                               self._basePropCov, self._nSteps,
+                               self._tgtDgnst, self._surrDgnstList)

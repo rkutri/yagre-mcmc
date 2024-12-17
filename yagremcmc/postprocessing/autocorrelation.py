@@ -89,7 +89,7 @@ def integrated_autocorrelation_1d(seq, sokalConst=5.0):
     return int(np.rint(iatSeq[maxLag]))
 
 
-def integrated_autocorrelation_nd(seq, method='mean', sokalConst=5.):
+def integrated_autocorrelation(seq, method='mean', sokalConst=5.):
     """
     Parameters
     ----------

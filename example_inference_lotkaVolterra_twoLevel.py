@@ -9,10 +9,10 @@ from yagremcmc.chain.method.mlda import MLDABuilder
 from yagremcmc.statistics.gaussian import Gaussian
 from yagremcmc.statistics.covariance import DiagonalCovarianceMatrix, IIDCovarianceMatrix
 from yagremcmc.statistics.noise import CentredGaussianIIDNoise
-from yagremcmc.statistics.likelihood import AdditiveNoiseLikelihood
+from yagremcmc.statistics.likelihood import AdditiveGaussianNoiseLikelihood
 from yagremcmc.statistics.modelHierarchy import BayesianModelHierarchyFactory
 from yagremcmc.utility.hierarchy import shared, hierarchical
-from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation_nd
+from yagremcmc.postprocessing.autocorrelation import integrated_autocorrelation
 
 np.random.seed(1112)
 
@@ -82,14 +82,12 @@ dataHierarchy = shared(data, hierarchySize)
 priorHierarchy = shared(prior, hierarchySize)
 modelHierarchy = hierarchical([surrogateModel, targetModel])
 noiseHierarchy = shared(noiseModel, hierarchySize)
-temperingSequence = [0.5, 1.]
 
 modelFactory = BayesianModelHierarchyFactory(
     dataHierarchy,
     priorHierarchy,
     modelHierarchy,
-    noiseHierarchy,
-    temperingSequence)
+    noiseHierarchy)
 
 statModel = modelFactory.create_model()
 
@@ -117,7 +115,7 @@ sampler.run(nSteps, initState)
 states = sampler.chain.trajectory
 
 burnIn = 100
-thinningStep = integrated_autocorrelation_nd(states[burnIn:], 'max')
+thinningStep = integrated_autocorrelation(states[burnIn:], 'max')
 
 mcmcSamples = states[burnIn::thinningStep]
 meanState = setup.LotkaVolterraParameter.from_coefficient(
@@ -129,7 +127,7 @@ posteriorMean = setup.LotkaVolterraParameter.from_coefficient(
 print(f"true parameter: {groundTruth.evaluate()}")
 print(f"raw posterior mean: {meanState.evaluate()}")
 print(f"processed posterior mean: {posteriorMean.evaluate()}")
-print(f"Acceptance rate: {sampler.chain.diagnostics.global_acceptance_rate()}")
+print(f"Acceptance rate: {sampler.diagnostics.global_acceptance_rate()}")
 print(f"IAT estimate: {thinningStep}")
 print(f"effective sample size: {(nSteps - burnIn) // thinningStep}")
 

@@ -1,15 +1,12 @@
 from abc import ABC, abstractmethod
-from enum import IntEnum
 from numpy.random import uniform
 
-from yagremcmc.utility.boilerplate import create_logger
-from yagremcmc.chain.diagnostics import print_diagnostics
 from yagremcmc.statistics.interface import DensityInterface
+from yagremcmc.chain.interface import ChainDiagnostics
+from yagremcmc.chain.transition import TransitionData
 from yagremcmc.chain.proposal import ProposalMethod
 from yagremcmc.chain.chain import Chain
-
-
-mhLogger = create_logger()
+from yagremcmc.utility.verbosity import VerbosityController
 
 
 class MetropolisHastings(ABC):
@@ -17,18 +14,20 @@ class MetropolisHastings(ABC):
     Template class for Metropolis-Hastings-type chains
     """
 
-    proposalRejected = 0
-    proposalAccepted = 1
-
-    def __init__(self, targetDensity: DensityInterface,
-                 proposalMethod: ProposalMethod) -> None:
+    def __init__(self,
+                 targetDensity: DensityInterface,
+                 proposalMethod: ProposalMethod,
+                 diagnostics: ChainDiagnostics
+                 ) -> None:
 
         super().__init__()
 
         self._tgtDensity = targetDensity
         self._proposalMethod = proposalMethod
+        self._diagnostics = diagnostics
 
         self._chain = Chain()
+        self._verbosityController = VerbosityController()
 
     @property
     def chain(self):
@@ -38,59 +37,89 @@ class MetropolisHastings(ABC):
     def target(self):
         return self._tgtDensity
 
+    @property
+    def diagnostics(self):
+        return self._diagnostics
+
+    def set_up_verbosity_controller(self, chainLength, verbose):
+
+        if verbose:
+            self._verbosityController.prepare(chainLength, self._diagnostics)
+        else:
+            self._verbosityController.turn_off()
+
     @abstractmethod
     def _acceptance_probability(self, proposal, state):
         pass
 
-    def _accept_reject(self, proposal, state):
+    def _accept_reject(self, proposal, state) -> TransitionData:
 
         # acceptance probability is zero, omit evaluation of the likelihood
-        # in __acceptance_probability. The probability of this event is
+        # in __acceptance_probability. The probability of this happening is
         # non-zero in MLDA
         if proposal == state:
-            return state, MetropolisHastings.proposalRejected
+            return TransitionData(state, proposal, TransitionData.REJECTED)
 
         acceptProb = self._acceptance_probability(proposal, state)
 
-        assert 0. <= acceptProb and acceptProb <= 1.
+        if acceptProb < 0. or 1. < acceptProb:
+            raise RuntimeError(f"invalid acceptance probability: {acceptProb}")
 
         decision = uniform(low=0., high=1., size=1)[0]
 
         if decision <= acceptProb:
-            return proposal, MetropolisHastings.proposalAccepted
+            return TransitionData(state, proposal, TransitionData.ACCEPTED)
         else:
-            return state, MetropolisHastings.proposalRejected
+            return TransitionData(state, proposal, TransitionData.REJECTED)
 
-    def run(self, chainLength, initialState, verbose=True,
-            nPrintIntervals=20, minInterval=10):
+    def _update_chain(self, nextState):
+        self._chain.append(nextState.coefficient)
+
+    # make it a class method to allows derived classed to override
+    def determine_next_state(self, transitionData):
+
+        nextState = None
+
+        if transitionData.outcome == TransitionData.ACCEPTED:
+            nextState = transitionData.proposal
+
+        elif transitionData.outcome == TransitionData.REJECTED:
+            nextState = transitionData.state
+        else:
+            raise ValueError(
+                f"Invalid transition outcome: {transitionData.outcome}")
+
+        return nextState
+
+    def _process_transition(self, transitionData):
+
+        self._diagnostics.process(transitionData)
+
+        nextState = self.determine_next_state(transitionData)
+        self._update_chain(nextState)
+
+        return nextState
+
+    def run(self, chainLength, initialState, verbose=True):
+
+        self.set_up_verbosity_controller(chainLength, verbose)
 
         self._chain.clear()
-        self._chain.append(initialState.coefficient, True)
+        self._chain.append(initialState.coefficient)
 
         state = initialState.clone_with(self._chain.trajectory[0])
 
         for n in range(chainLength - 1):
 
-            if verbose:
-
-                if (n == 0):
-                    mhLogger.info("Start Markov chain")
-
-                interval = max(chainLength // nPrintIntervals, minInterval)
-
-                if (n % interval == 0 and n > 0):
-
-                    mhLogger.info(
-                        f"{n} steps computed. Calculating diagnostics.")
-
-                    print_diagnostics(
-                        mhLogger, self._chain.diagnostics, interval)
+            self._verbosityController.run(n)
 
             self._proposalMethod.set_state(state)
             proposal = self._proposalMethod.generate_proposal()
 
-            state, isAccepted = self._accept_reject(proposal, state)
+            transitionOutcome = self._accept_reject(proposal, state)
+            state = self._process_transition(transitionOutcome)
 
-            self._chain.append(state.coefficient, isAccepted)
+    def clear(self):
 
-        return
+        self._diagnostics.reset()
+        self._chain.clear()

@@ -218,14 +218,16 @@ class AMBuilder(ChainBuilder):
 
         self._validate_parameters()
         targetDensity = UnnormalisedPosterior(self._bayesModel)
-        return AdaptiveMetropolis(targetDensity, self._initialCovariance,
-                                  self._idleSteps, self._collectionSteps, self._regularisationParameter)
+        return AdaptiveMetropolis(
+            targetDensity, self._initialCovariance, self._idleSteps, self.
+            _collectionSteps, self._regularisationParameter)
 
     def build_from_target(self) -> MetropolisHastings:
 
         self._validate_parameters()
-        return AdaptiveMetropolis(self._explicitTarget, self._initialCovariance,
-                                  self._idleSteps, self._collectionSteps, self._regularisationParameter)
+        return AdaptiveMetropolis(
+            self._explicitTarget, self._initialCovariance, self._idleSteps,
+            self._collectionSteps, self._regularisationParameter)
 
     def _validate_parameters(self) -> None:
 

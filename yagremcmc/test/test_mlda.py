@@ -2,7 +2,9 @@ import pytest
 
 import numpy as np
 
-from yagremcmc.chain.method.mlda import MLDABuilder
+from unittest.mock import MagicMock
+from yagremcmc.chain.method.mlda import MLDA, MLDABuilder
+from yagremcmc.chain.target import UnnormalisedPosterior
 from yagremcmc.statistics.covariance import IIDCovarianceMatrix
 from yagremcmc.test.testSetup import GaussianTargetDensity2d
 from yagremcmc.parameter.vector import ParameterVector
@@ -72,7 +74,7 @@ def test_mlda_chain(setup_mlda_test_data, mlda_chain_builder):
 
     # Extract results
     states = np.array(mcmc.chain.trajectory)
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
 
     # Assertions
     assert len(states) == nChain, "Chain length mismatch with expected steps."
@@ -121,7 +123,7 @@ def test_mlda_perfect_surrogate(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
 
     # Assertions
     assert np.abs(diagnostics.global_acceptance_rate() - 1.) < 1e-3, \
@@ -159,7 +161,7 @@ def test_mlda_two_level(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
     acceptance_rate = diagnostics.global_acceptance_rate()
 
     # Postprocessing
@@ -175,7 +177,8 @@ def test_mlda_two_level(setup_mlda_test_data):
         mcmc.chain.trajectory) == nChain, "Chain length mismatch for two-level method."
 
     assert 0.1 < acceptance_rate < 0.9, \
-        f"Acceptance rate {acceptance_rate} for two-level method is outside expected range."
+        f"Acceptance rate {acceptance_rate} for two-level method is outside " \
+        "expected range."
 
     np.testing.assert_allclose(
         meanEst, data["tgtMean"], atol=0.1,
@@ -229,7 +232,7 @@ def test_mlda_five_level_method(setup_mlda_test_data):
     mcmc.run(nChain, initState, verbose=False)
 
     # Extract diagnostics
-    diagnostics = mcmc.chain.diagnostics
+    diagnostics = mcmc.diagnostics
     acceptance_rate = diagnostics.global_acceptance_rate()
 
     # Postprocessing
@@ -245,7 +248,8 @@ def test_mlda_five_level_method(setup_mlda_test_data):
     assert len(
         mcmc.chain.trajectory) == nChain, "Chain length mismatch for five-level method."
     assert 0.1 < acceptance_rate < 0.9, \
-        f"Acceptance rate {acceptance_rate} for five-level method is outside expected range."
+        f"Acceptance rate {acceptance_rate} for five-level method is " \
+        "outside expected range."
     np.testing.assert_allclose(
         meanEst, data["tgtMean"], atol=0.2,
         err_msg="Estimated mean from five-level method deviates significantly from target mean."

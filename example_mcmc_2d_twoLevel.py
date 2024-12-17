@@ -51,8 +51,8 @@ assert nSteps > burnin
 acf = [ac.estimate_autocorrelation_function_1d(
     states[burnin:, d]) for d in range(dim)]
 
-meanIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'mean')
-maxIAT = ac.integrated_autocorrelation_nd(states[burnin:], 'max')
+meanIAT = ac.integrated_autocorrelation(states[burnin:], 'mean')
+maxIAT = ac.integrated_autocorrelation(states[burnin:], 'max')
 
 thinningStep = maxIAT
 
@@ -64,7 +64,7 @@ meanEst = np.mean(mcmcSamples, axis=0)
 
 print("\nAnalytics")
 print("---------")
-print(f"acceptance rate: {mcmc.chain.diagnostics.global_acceptance_rate()}")
+print(f"acceptance rate: {mcmc.diagnostics.global_acceptance_rate()}")
 print(f"mean IAT: {meanIAT}")
 print(f"max IAT: {maxIAT}\n")
 

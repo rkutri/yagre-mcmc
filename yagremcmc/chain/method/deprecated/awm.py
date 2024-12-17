@@ -168,14 +168,16 @@ class AWMBuilder(ChainBuilder):
 
         self._validate_parameters()
         targetDensity = UnnormalisedPosterior(self._bayesModel)
-        return AdaptiveWeightingMetropolis(targetDensity, self._initialCovariance,
-                                           self._idleSteps, self._collectionSteps)
+        return AdaptiveWeightingMetropolis(
+            targetDensity, self._initialCovariance, self._idleSteps, self.
+            _collectionSteps)
 
     def build_from_target(self) -> MetropolisHastings:
 
         self._validate_parameters()
-        return AdaptiveWeightingMetropolis(self._explicitTarget, self._initialCovariance,
-                                           self._idleSteps, self._collectionSteps)
+        return AdaptiveWeightingMetropolis(
+            self._explicitTarget, self._initialCovariance, self._idleSteps,
+            self._collectionSteps)
 
     def _validate_parameters(self) -> None:
 

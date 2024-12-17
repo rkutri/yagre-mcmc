@@ -1,12 +1,24 @@
 from yagremcmc.statistics.interface import BayesianModelInterface
+from yagremcmc.utility.hierarchy import Hierarchy, SharedComponent
 
 
 class BayesianRegressionModel(BayesianModelInterface):
 
-    def __init__(self, prior, likelihood):
+    def __init__(self, likelihood, prior):
 
-        self._prior = prior
-        self._likelihood = likelihood
+        self._likelihood = self._initialize_component(likelihood, "likelihood")
+        self._prior = self._initialize_component(prior, "prior")
+
+    def _initialize_component(self, component, name):
+
+        if isinstance(component, Hierarchy):
+            if isinstance(component, SharedComponent):
+                return component.level(0)
+            else:
+                raise RuntimeError(f"Setting non-hierarchical {name} with "
+                                   f"a {name} hierarchy")
+
+        return component
 
     @property
     def prior(self):
@@ -15,13 +27,3 @@ class BayesianRegressionModel(BayesianModelInterface):
     @property
     def likelihood(self):
         return self._likelihood
-
-    def log_prior(self, parameter):
-
-        # the prior is itself a parameter law
-        return self._prior.density.evaluate_log(parameter)
-
-    def log_likelihood(self, parameter):
-
-        # the likelihood is just the Radon-Nikodym derivative
-        return self._likelihood.evaluate_log(parameter)

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
-class Hierarchy(ABC):
+class HierarchyBase(ABC):
 
     def __init__(self, nLevels):
 
@@ -16,26 +16,21 @@ class Hierarchy(ABC):
     def size(self):
         return self._nLevels
 
-    def check_level_index(self, idx):
+    def validate_level_index(self, idx):
 
-        if idx < 0 or idx == self._nLevels:
+        if idx < -1 or self._nLevels <= idx:
             raise ValueError(f"invalid level index. Trying to access level "
                              "{idx} in a hierarchy of {self._nLevels} levels.")
 
         else:
             return
 
-    @property
-    @abstractmethod
-    def target(self):
-        pass
-
     @abstractmethod
     def level(self, lvlIdx):
         pass
 
 
-class shared(Hierarchy):
+class SharedComponent(HierarchyBase):
 
     def __init__(self, sharedComponent, nLevels: int):
 
@@ -43,18 +38,14 @@ class shared(Hierarchy):
 
         self._sharedComponent = sharedComponent
 
-    @property
-    def target(self):
-        return self._sharedComponent
-
     def level(self, lvlIdx):
 
-        self.check_level_index(lvlIdx)
+        self.validate_level_index(lvlIdx)
 
         return self._sharedComponent
 
 
-class hierarchical(Hierarchy):
+class Hierarchy(HierarchyBase):
 
     def __init__(self, hierarchy: List):
 
@@ -62,11 +53,11 @@ class hierarchical(Hierarchy):
 
         self._hierarchy = hierarchy
 
-    @property
-    def target(self):
-        return self._hierarchy[-1]
-
     def level(self, lvlIdx):
 
-        self.check_level_index(lvlIdx)
-        return self._hierarchy[lvlIdx]
+        self.validate_level_index(lvlIdx)
+
+        if lvlIdx == -1:
+            return self._hierarchy[-1]
+        else:
+            return self._hierarchy[lvlIdx]

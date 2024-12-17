@@ -39,7 +39,7 @@ class ScalarParameter(ParameterInterface):
     def __eq__(self, other):
 
         if isinstance(other, ScalarParameter):
-            return isclose(self.coefficient_, other.coefficient)
+            return isclose(self.coefficient_[0], other.coefficient[0])
 
         return NotImplemented
 
