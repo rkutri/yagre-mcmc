@@ -1,4 +1,5 @@
-from numpy import max, min, dot, reciprocal
+import numpy as np
+
 from yagremcmc.statistics.interface import NoiseModelInterface
 from yagremcmc.statistics.covariance import (CovarianceMatrix,
                                              DiagonalCovarianceMatrix)
@@ -35,9 +36,12 @@ class AEMNoise(CentredGaussianNoise):
         self._aemNoise = None
         self._useHeuristic = useHeuristic
 
-    def scaling_heuristic(mVar):
+    def scaling_heuristic(mVar, eps=1e-6, maxScaling=100):
 
-        return 2. * max(mVar) / min(mVar)
+        minVal = max(np.min(mVar), eps)
+        scaling = 2. * np.max(mVar) / minVal
+
+        return min(scaling, maxScaling)
 
 
     def set_error_marginal_variance(self, mVar):
